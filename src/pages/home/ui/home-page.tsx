@@ -18,8 +18,8 @@ export function HomePage() {
           Talk in realtime
         </h1>
         <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-          Chat and call with low-latency presence — architecture ready for
-          Convex realtime.
+          Chat and call with low-latency presence — self-hosted, your data
+          stays yours.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">

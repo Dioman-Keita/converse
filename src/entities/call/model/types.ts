@@ -2,8 +2,8 @@ import type { UserId } from "@/entities/user"
 import type { RoomId } from "@/entities/room"
 
 /**
- * Domain types for realtime calls — future Convex + WebRTC/LiveKit layer.
- * Convex can own signaling/presence; media stays on a specialized SFU.
+ * Domain types for realtime calls — future WebRTC/LiveKit layer.
+ * Signaling goes through the /ws server; media stays on a specialized SFU.
  */
 export type CallId = string
 
