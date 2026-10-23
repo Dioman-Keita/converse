@@ -70,6 +70,7 @@ Client → server:
 { "type": "subscribe",   "roomId": "…" }
 { "type": "unsubscribe", "roomId": "…" }
 { "type": "send",        "roomId": "…", "body": "Hi", "clientId": "local-uuid" }
+{ "type": "typing",      "roomId": "…", "typing": true }
 ```
 
 Server → client:
@@ -78,12 +79,18 @@ Server → client:
 { "type": "ready", "userId": "…" }
 { "type": "subscribed", "roomId": "…" }
 { "type": "message", "message": { "id", "roomId", "authorId", "body", "createdAt" }, "clientId": "…" }
-{ "type": "room", "room": { "id", "name", "type", "createdAt", "lastMessageAt", "members": [{ "id", "name", "email" }] } }
+{ "type": "room", "room": { "id", "name", "type", "createdAt", "lastMessageAt", "members": [{ "id", "name", "email", "online", "lastSeenAt" }] } }
+{ "type": "presence", "userId": "…", "online": false, "lastSeenAt": "2026-10-23T14:29:46.000Z" }
+{ "type": "typing", "roomId": "…", "userId": "…", "typing": true }
 { "type": "error", "code": "forbidden", "message": "…", "clientId": "…" }
 ```
 
 `clientId` lets the sender match the echo with its optimistic message.
 `room` is pushed to every member when a conversation they belong to is created; clients then `subscribe` to it.
+
+**Presence.** A user is online while at least one of their sockets is open (any tab or device). On the first connect and the last disconnect the server stamps `users.last_seen_at` and sends `presence` to every user who shares a room with them. Room members (`GET /api/rooms`, `room` event) carry `online` and `lastSeenAt` as a snapshot; `presence` events keep it current.
+
+**Typing.** While the composer has text, clients send `typing: true` at most every 3 s and `typing: false` when it is emptied, on send, or after 4 s without keystrokes. The server relays it to the room's subscribers (including the sender's own sockets, which ignore their own `userId`). Receivers drop a signal not refreshed within 6 s, and clear it when that user's message arrives or they go offline.
 Types live in `server/utils/hub.ts` (contract shared with the Android app).
 
 ## Clients

@@ -13,21 +13,32 @@ export function Avatar({
   name,
   seed,
   className,
+  online,
 }: {
   name: string
   seed: string
   className?: string
+  /** Shows a green presence dot when true; nothing when false/undefined. */
+  online?: boolean
 }) {
   return (
-    <span
-      aria-hidden
-      className={cn(
-        "flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white",
-        className,
+    <span className="relative shrink-0">
+      <span
+        aria-hidden
+        className={cn(
+          "flex size-9 items-center justify-center rounded-full text-xs font-semibold text-white",
+          className,
+        )}
+        style={{ background: `oklch(0.5 0.13 ${hue(seed)})` }}
+      >
+        {initials(name)}
+      </span>
+      {online && (
+        <span
+          aria-label="En ligne"
+          className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+        />
       )}
-      style={{ background: `oklch(0.5 0.13 ${hue(seed)})` }}
-    >
-      {initials(name)}
     </span>
   )
 }

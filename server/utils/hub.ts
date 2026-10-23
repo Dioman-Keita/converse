@@ -1,7 +1,7 @@
 /**
  * In-memory realtime fan-out:
- * - roomId → sockets subscribed to that room (messages)
- * - userId → sockets of that user (room membership changes)
+ * - roomId → sockets subscribed to that room (messages, typing)
+ * - userId → sockets of that user (room membership changes, presence)
  *
  * Single-process by design (one `app` container). If Converse ever runs
  * several app instances, replace this with Postgres LISTEN/NOTIFY.
@@ -49,14 +49,26 @@ export function leaveRoom(roomId: string, socket: Socket) {
   remove(rooms, roomId, socket)
 }
 
-export function registerUserSocket(userId: string, socket: Socket) {
+/** Returns true when this is the user's first live socket (they just came online). */
+export function registerUserSocket(userId: string, socket: Socket): boolean {
+  const wasOnline = users.has(userId)
   add(users, userId, socket)
+  return !wasOnline
 }
 
-/** Drops a closed socket from every room and user channel. */
-export function disconnect(userId: string, socket: Socket) {
+/**
+ * Drops a closed socket from every room and user channel.
+ * Returns true when it was the user's last socket (they just went offline).
+ */
+export function disconnect(userId: string, socket: Socket): boolean {
   for (const roomId of [...rooms.keys()]) remove(rooms, roomId, socket)
   remove(users, userId, socket)
+  return !users.has(userId)
+}
+
+/** A user is online while at least one of their sockets is connected (any tab or device). */
+export function isOnline(userId: string): boolean {
+  return users.has(userId)
 }
 
 export function broadcast(roomId: string, event: ServerEvent) {
@@ -76,7 +88,13 @@ export type MessageDto = {
   createdAt: string
 }
 
-export type RoomMemberDto = { id: string; name: string; email: string }
+export type RoomMemberDto = {
+  id: string
+  name: string
+  email: string
+  online: boolean
+  lastSeenAt: string | null
+}
 
 export type RoomDto = {
   id: string
@@ -93,6 +111,8 @@ export type ServerEvent =
   | { type: "subscribed"; roomId: string }
   | { type: "message"; message: MessageDto; clientId?: string }
   | { type: "room"; room: RoomDto }
+  | { type: "presence"; userId: string; online: boolean; lastSeenAt: string | null }
+  | { type: "typing"; roomId: string; userId: string; typing: boolean }
   | { type: "error"; code: string; message: string; clientId?: string }
 
 /** Client → server events. */
@@ -100,3 +120,4 @@ export type ClientEvent =
   | { type: "subscribe"; roomId: string }
   | { type: "unsubscribe"; roomId: string }
   | { type: "send"; roomId: string; body: string; clientId?: string }
+  | { type: "typing"; roomId: string; typing: boolean }

@@ -17,7 +17,12 @@ export type ChatState = {
   unread: Record<string, number | undefined>
   activeRoomId: string | undefined
   connection: RealtimeStatus
+  /** roomId → userId → time (ms) after which the "is typing" signal is stale. */
+  typing: Record<string, Record<string, number> | undefined>
 }
+
+/** Receivers drop a typing signal not refreshed within this delay. */
+export const TYPING_TTL_MS = 6_000
 
 export type ChatAction =
   | { type: "roomsLoaded"; rooms: Room[] }
@@ -32,6 +37,9 @@ export type ChatAction =
   | { type: "messageFailed"; roomId: string; clientId: string }
   | { type: "messageDiscarded"; roomId: string; clientId: string }
   | { type: "connection"; status: RealtimeStatus }
+  | { type: "presence"; userId: string; online: boolean; lastSeenAt: string | null }
+  | { type: "typing"; roomId: string; userId: string; typing: boolean; now: number }
+  | { type: "typingExpired"; now: number }
 
 export const initialChatState: ChatState = {
   roomsStatus: "loading",
@@ -40,6 +48,19 @@ export const initialChatState: ChatState = {
   unread: {},
   activeRoomId: undefined,
   connection: "closed",
+  typing: {},
+}
+
+function setTyping(
+  typing: ChatState["typing"],
+  roomId: string,
+  userId: string,
+  until: number | undefined,
+): ChatState["typing"] {
+  const room = { ...typing[roomId] }
+  if (until === undefined) delete room[userId]
+  else room[userId] = until
+  return { ...typing, [roomId]: room }
 }
 
 const sent = (m: Message): ChatMessage => ({ ...m, status: "sent" })
@@ -145,6 +166,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         }
       }
 
+      // A sent message ends that author's typing signal.
+      if (next.typing[message.roomId]?.[message.authorId] !== undefined) {
+        next = {
+          ...next,
+          typing: setTyping(next.typing, message.roomId, message.authorId, undefined),
+        }
+      }
+
       const fromSomeoneElse = message.authorId !== action.currentUserId
       const alreadyKnown = state.history[message.roomId]?.items.some((m) => m.id === message.id)
       if (fromSomeoneElse && !alreadyKnown && message.roomId !== state.activeRoomId) {
@@ -173,6 +202,63 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       }))
 
     case "connection":
-      return { ...state, connection: action.status }
+      // Typing signals can't be trusted across a disconnect.
+      return { ...state, connection: action.status, typing: action.status === "open" ? state.typing : {} }
+
+    case "presence":
+      return {
+        ...state,
+        rooms: state.rooms.map((room) =>
+          room.members.some((m) => m.id === action.userId)
+            ? {
+                ...room,
+                members: room.members.map((m) =>
+                  m.id === action.userId
+                    ? { ...m, online: action.online, lastSeenAt: action.lastSeenAt }
+                    : m,
+                ),
+              }
+            : room,
+        ),
+        // Someone who went offline is no longer typing anywhere.
+        typing: action.online
+          ? state.typing
+          : Object.fromEntries(
+              Object.entries(state.typing).map(([roomId, users]) => {
+                const rest = { ...users }
+                delete rest[action.userId]
+                return [roomId, rest]
+              }),
+            ),
+      }
+
+    case "typing":
+      return {
+        ...state,
+        typing: setTyping(
+          state.typing,
+          action.roomId,
+          action.userId,
+          action.typing ? action.now + TYPING_TTL_MS : undefined,
+        ),
+      }
+
+    case "typingExpired": {
+      let changed = false
+      const typing: ChatState["typing"] = {}
+      for (const [roomId, users] of Object.entries(state.typing)) {
+        const alive = Object.fromEntries(
+          Object.entries(users ?? {}).filter(([, until]) => until > action.now),
+        )
+        if (Object.keys(alive).length !== Object.keys(users ?? {}).length) changed = true
+        typing[roomId] = alive
+      }
+      return changed ? { ...state, typing } : state
+    }
   }
+}
+
+/** Ids of the other users currently typing in a room. */
+export function typingUsers(state: ChatState, roomId: string, currentUserId: string): string[] {
+  return Object.keys(state.typing[roomId] ?? {}).filter((id) => id !== currentUserId)
 }

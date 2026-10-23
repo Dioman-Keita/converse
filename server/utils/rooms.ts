@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 
 import { db, schema } from "../db/client"
+import { isOnline } from "./hub"
 import type { RoomDto, RoomMemberDto } from "./hub"
 
 export async function isRoomMember(
@@ -33,8 +34,10 @@ export async function listRooms(
       type: r.type,
       createdAt: r.createdAt,
       lastMessageAt: r.lastMessageAt,
-      members: sql<RoomMemberDto[]>`(
-        select coalesce(json_agg(json_build_object('id', u.id, 'name', u.name, 'email', u.email) order by u.name), '[]'::json)
+      members: sql<StoredMember[]>`(
+        select coalesce(json_agg(json_build_object(
+          'id', u.id, 'name', u.name, 'email', u.email, 'lastSeenAt', u.last_seen_at
+        ) order by u.name), '[]'::json)
         from ${schema.roomMembers} m join ${schema.users} u on u.id = m.user_id
         where m.room_id = ${r.id}
       )`,
@@ -53,8 +56,19 @@ export async function listRooms(
     ...row,
     createdAt: row.createdAt.toISOString(),
     lastMessageAt: row.lastMessageAt?.toISOString() ?? null,
+    members: row.members.map(
+      (m): RoomMemberDto => ({
+        ...m,
+        online: isOnline(m.id),
+        // Postgres JSON timestamps aren't ISO-8601 with "Z"; normalize for clients.
+        lastSeenAt: m.lastSeenAt ? new Date(m.lastSeenAt).toISOString() : null,
+      }),
+    ),
   }))
 }
+
+type StoredMember = Omit<RoomMemberDto, "online">
+
 
 /** The existing direct room between two users, if any. */
 export async function findDirectRoom(

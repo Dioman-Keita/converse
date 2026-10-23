@@ -8,7 +8,10 @@ import type { User } from "@/entities/user"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui"
 
+import { typingUsers } from "../model/chat-state"
+import type { ChatState } from "../model/chat-state"
 import { useChat } from "../model/use-chat"
+import { formatPresence, formatTyping, useNow } from "../lib/presence"
 import { Avatar } from "./avatar"
 import { MessageList } from "./message-list"
 import { RoomList } from "./room-list"
@@ -24,13 +27,25 @@ type ChatShellProps = {
  * On mobile only one pane is visible at a time.
  */
 export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) {
-  const { state, selectRoom, loadOlder, send, retry, addRoom } = useChat(
+  const { state, selectRoom, loadOlder, send, retry, addRoom, notifyTyping } = useChat(
     user.id,
     onSessionExpired,
   )
   const [creating, setCreating] = useState(false)
 
   const activeRoom = state.rooms.find((r) => r.id === state.activeRoomId)
+  const now = useNow(30_000)
+
+  // Names of the other people typing, per room (for the list, header and thread).
+  const typingByRoom: Record<string, string[]> = {}
+  for (const room of state.rooms) {
+    const ids = typingUsers(state, room.id, user.id)
+    if (ids.length) {
+      typingByRoom[room.id] = ids.map(
+        (id) => room.members.find((m) => m.id === id)?.name ?? "Quelqu’un",
+      )
+    }
+  }
 
   return (
     <div className="flex h-svh w-full overflow-hidden bg-background">
@@ -94,6 +109,7 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
             currentUserId={user.id}
             activeRoomId={state.activeRoomId}
             unread={state.unread}
+            typingByRoom={typingByRoom}
             onSelect={selectRoom}
           />
         </div>
@@ -112,15 +128,24 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
               >
                 <ArrowLeft />
               </Button>
-              <Avatar name={roomTitle(activeRoom, user.id)} seed={activeRoom.id} className="size-8" />
+              <Avatar
+                name={roomTitle(activeRoom, user.id)}
+                seed={activeRoom.id}
+                className="size-8"
+                online={
+                  activeRoom.type === "direct"
+                    ? activeRoom.members.some((m) => m.id !== user.id && m.online)
+                    : undefined
+                }
+              />
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{roomTitle(activeRoom, user.id)}</p>
-                <p className="truncate text-xs text-muted-foreground">
-                  {activeRoom.members
-                    .filter((m) => m.id !== user.id)
-                    .map((m) => (activeRoom.type === "direct" ? m.email : m.name))
-                    .join(", ")}
-                </p>
+                <RoomStatus
+                  room={activeRoom}
+                  currentUserId={user.id}
+                  typingNames={typingByRoom[activeRoom.id] ?? []}
+                  now={now}
+                />
               </div>
             </header>
 
@@ -131,9 +156,14 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
               currentUserId={user.id}
               onLoadOlder={() => void loadOlder(activeRoom.id)}
               onRetry={retry}
+              typingLabel={formatTyping(typingByRoom[activeRoom.id] ?? [], false)}
             />
 
-            <MessageComposer onSend={(body) => send(activeRoom.id, body)} />
+            <MessageComposer
+              key={activeRoom.id}
+              onSend={(body) => send(activeRoom.id, body)}
+              onTyping={(typing) => notifyTyping(activeRoom.id, typing)}
+            />
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -142,6 +172,41 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
         )}
       </main>
     </div>
+  )
+}
+
+/** Header subtitle: typing, else presence (direct) or member count (group). */
+function RoomStatus({
+  room,
+  currentUserId,
+  typingNames,
+  now,
+}: {
+  room: ChatState["rooms"][number]
+  currentUserId: string
+  typingNames: string[]
+  now: number
+}) {
+  const typing = formatTyping(typingNames, room.type === "direct")
+  if (typing) {
+    return <p className="truncate text-xs text-primary italic">{typing}</p>
+  }
+
+  const others = room.members.filter((m) => m.id !== currentUserId)
+  if (room.type === "direct") {
+    const other = others.at(0)
+    return (
+      <p className="truncate text-xs text-muted-foreground">
+        {other ? formatPresence(other, now) : "Hors ligne"}
+      </p>
+    )
+  }
+
+  const online = others.filter((m) => m.online).length
+  return (
+    <p className="truncate text-xs text-muted-foreground">
+      {room.members.length} membres{online > 0 && ` · ${online} en ligne`}
+    </p>
   )
 }
 

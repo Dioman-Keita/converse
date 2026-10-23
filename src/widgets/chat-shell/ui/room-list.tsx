@@ -3,6 +3,7 @@ import type { Room } from "@/entities/room"
 import { cn } from "@/shared/lib/utils"
 
 import { formatRelative } from "../lib/format"
+import { formatTyping } from "../lib/presence"
 import { Avatar } from "./avatar"
 
 type RoomListProps = {
@@ -10,6 +11,8 @@ type RoomListProps = {
   currentUserId: string
   activeRoomId: string | undefined
   unread: Record<string, number | undefined>
+  /** roomId → names of the other people currently typing there. */
+  typingByRoom: Record<string, string[] | undefined>
   onSelect: (roomId: string) => void
 }
 
@@ -18,6 +21,7 @@ export function RoomList({
   currentUserId,
   activeRoomId,
   unread,
+  typingByRoom,
   onSelect,
 }: RoomListProps) {
   return (
@@ -26,6 +30,9 @@ export function RoomList({
         const title = roomTitle(room, currentUserId)
         const count = unread[room.id] ?? 0
         const active = room.id === activeRoomId
+        const other =
+          room.type === "direct" ? room.members.find((m) => m.id !== currentUserId) : undefined
+        const typing = formatTyping(typingByRoom[room.id] ?? [], room.type === "direct")
         return (
           <li key={room.id}>
             <button
@@ -37,7 +44,7 @@ export function RoomList({
                 active ? "bg-accent text-accent-foreground" : "hover:bg-accent/50",
               )}
             >
-              <Avatar name={title} seed={room.id} />
+              <Avatar name={title} seed={room.id} online={other?.online} />
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
                   <span className={cn("truncate text-sm", count > 0 ? "font-semibold" : "font-medium")}>
@@ -48,11 +55,15 @@ export function RoomList({
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
-                  <span className="truncate text-xs text-muted-foreground">
-                    {room.type === "group"
-                      ? `${room.members.length} membres`
-                      : room.members.find((m) => m.id !== currentUserId)?.email}
-                  </span>
+                  {typing ? (
+                    <span className="truncate text-xs text-primary italic">
+                      {room.type === "direct" ? "écrit…" : typing}
+                    </span>
+                  ) : (
+                    <span className="truncate text-xs text-muted-foreground">
+                      {room.type === "group" ? `${room.members.length} membres` : other?.email}
+                    </span>
+                  )}
                   {count > 0 && (
                     <span className="ml-auto flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[0.7rem] font-semibold text-primary-foreground">
                       {count > 99 ? "99+" : count}

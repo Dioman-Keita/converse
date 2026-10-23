@@ -7,9 +7,16 @@
 import { defineWebSocketHandler } from "nitro/h3"
 
 import { getSessionUser } from "../utils/auth"
-import { disconnect, joinRoom, leaveRoom, registerUserSocket } from "../utils/hub"
+import {
+  broadcast,
+  disconnect,
+  joinRoom,
+  leaveRoom,
+  registerUserSocket,
+} from "../utils/hub"
 import type { ClientEvent, ServerEvent } from "../utils/hub"
 import { MAX_MESSAGE_LENGTH, postMessage } from "../utils/messages"
+import { announcePresence } from "../utils/presence"
 import { UUID_RE, isRoomMember } from "../utils/rooms"
 
 type PeerContext = { userId: string; rooms: Set<string> }
@@ -30,8 +37,9 @@ export default defineWebSocketHandler({
 
   open(peer) {
     const { userId } = peer.context as PeerContext
-    registerUserSocket(userId, peer)
+    const cameOnline = registerUserSocket(userId, peer)
     send(peer, { type: "ready", userId })
+    if (cameOnline) void announcePresence(userId, true).catch(logPresenceError)
   },
 
   async message(peer, raw) {
@@ -61,9 +69,15 @@ export default defineWebSocketHandler({
   },
 
   close(peer) {
-    disconnect((peer.context as PeerContext).userId, peer)
+    const { userId } = peer.context as PeerContext
+    const wentOffline = disconnect(userId, peer)
+    if (wentOffline) void announcePresence(userId, false).catch(logPresenceError)
   },
 })
+
+function logPresenceError(error: unknown) {
+  console.error("[converse] presence update failed", error)
+}
 
 async function handleEvent(peer: Peer, event: ClientEvent) {
   const context = peer.context as PeerContext
@@ -107,6 +121,16 @@ async function handleEvent(peer: Peer, event: ClientEvent) {
       await postMessage(event.roomId, context.userId, body, clientId)
       return
     }
+
+    case "typing":
+      // Membership was verified above; relay to the room (clients ignore their own userId).
+      context.rooms.add(event.roomId)
+      return broadcast(event.roomId, {
+        type: "typing",
+        roomId: event.roomId,
+        userId: context.userId,
+        typing: event.typing === true,
+      })
 
     default:
       return send(peer, { type: "error", code: "bad_type", message: "Unknown event type" })
