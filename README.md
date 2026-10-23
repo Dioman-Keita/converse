@@ -196,7 +196,7 @@ Le service `backup` écrit dans `./backups`, **au démarrage puis toutes les 24 
 - `converse-AAAAMMJJ-HHMMSS.dump` : la base (comptes, conversations, messages) ;
 - `converse-uploads-AAAAMMJJ-HHMMSS.tar.gz` : les fichiers audio des messages vocaux.
 
-Les fichiers audio vivent dans le volume Docker `uploads` (pas dans `data/`) : utilise ces archives pour les sauvegarder ou les déplacer. Il faut **les deux fichiers d'une même sauvegarde** pour restaurer des vocaux qui se lisent.
+La base et les fichiers audio vivent dans des **volumes Docker** (`pgdata` et `uploads`), pas dans un dossier du projet : utilise ces sauvegardes pour les mettre à l'abri ou les déplacer. Il faut **les deux fichiers d'une même sauvegarde** pour restaurer des vocaux qui se lisent.
 
 Forcer une sauvegarde immédiate :
 
@@ -204,7 +204,25 @@ Forcer une sauvegarde immédiate :
 docker compose restart backup
 ```
 
-Pour mettre tes sauvegardes à l'abri, synchronise le dossier `backups/` avec OneDrive ou Google Drive. Ne synchronise **jamais** `data/` : c'est la base en cours d'utilisation, la copier pendant qu'elle tourne peut la corrompre.
+Pour mettre tes sauvegardes à l'abri, synchronise le dossier `backups/` avec OneDrive ou Google Drive : c'est le seul dossier à copier ailleurs.
+
+### Ancienne installation : base dans `data/postgres`
+
+Les premières versions stockaient la base dans le dossier `data/postgres`. Sous Windows et macOS, Docker Desktop partage ce dossier lentement et de façon peu fiable pour une base de données (plantages et récupérations à répétition) : la base vit désormais dans le volume `pgdata`. Pour migrer **sans perte** :
+
+```bash
+docker compose stop app backup
+docker compose exec -T db pg_dump -U converse -Fc -f /tmp/migration.dump converse
+docker compose cp db:/tmp/migration.dump backups/migration.dump
+docker compose stop db
+git pull                      # récupère le docker-compose.yml qui utilise `pgdata`
+docker compose up -d db       # crée la base vide dans le volume
+docker compose cp backups/migration.dump db:/tmp/migration.dump
+docker compose exec -T db pg_restore -U converse -d converse --no-owner /tmp/migration.dump
+docker compose --profile quick-tunnel up -d --build
+```
+
+Sous Git Bash, préfixe les commandes contenant `/tmp/…` par `MSYS_NO_PATHCONV=1`. Vérifie que tout est là (connexion, conversations, vocaux) avant de supprimer l'ancien dossier `data/postgres`, que la nouvelle configuration n'utilise plus.
 
 ### Restaurer une sauvegarde
 
