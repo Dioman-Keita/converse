@@ -4,8 +4,8 @@
 #   docker compose --profile quick-tunnel up -d    # + temporary public URL (no account)
 #   docker compose --profile tunnel up -d          # + stable public URL (your domain)
 #
-# State: ./data/postgres (database), the `uploads` volume (voice notes),
-# ./backups (daily database dumps + uploads archives).
+# State: the `pgdata` volume (database), the `uploads` volume (voice notes),
+# ./backups (daily database dumps + uploads archives — what you copy elsewhere).
 
 services:
   db:
@@ -16,7 +16,9 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       POSTGRES_DB: converse
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      # Named volume, not a host folder: Docker Desktop's Windows/macOS file sharing
+      # is slow and unreliable for a database (it caused crash/recovery loops).
+      - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U converse"]
       interval: 5s
@@ -88,4 +90,5 @@ services:
       - app
 
 volumes:
+  pgdata:
   uploads:
