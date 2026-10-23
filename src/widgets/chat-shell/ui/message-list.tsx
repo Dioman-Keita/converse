@@ -28,13 +28,13 @@ export function MessageList({
   onRetry,
 }: MessageListProps) {
   if (!history || (history.status === "loading" && !history.items.length)) {
-    return <Centered>Loading messages…</Centered>
+    return <Centered>Chargement des messages…</Centered>
   }
   if (history.status === "error" && !history.items.length) {
-    return <Centered>Couldn&apos;t load messages. Check your connection.</Centered>
+    return <Centered>Impossible de charger les messages. Vérifiez votre connexion.</Centered>
   }
   if (!history.items.length) {
-    return <Centered>No messages yet — say hi 👋</Centered>
+    return <Centered>Aucun message pour l&apos;instant — dites bonjour 👋</Centered>
   }
 
   const names = new Map(room.members.map((m) => [m.id, m.name]))
@@ -46,7 +46,7 @@ export function MessageList({
         {history.nextCursor && (
           <li className="mb-3 flex justify-center">
             <Button variant="ghost" size="sm" onClick={onLoadOlder} disabled={history.loadingOlder}>
-              {history.loadingOlder ? "Loading…" : "Load older messages"}
+              {history.loadingOlder ? "Chargement…" : "Messages plus anciens"}
             </Button>
           </li>
         )}
@@ -65,7 +65,7 @@ export function MessageList({
               )}
               {newGroup && !mine && room.type === "group" && (
                 <p className="mt-2 mb-0.5 px-1 text-xs font-medium text-muted-foreground">
-                  {names.get(message.authorId) ?? "Former member"}
+                  {names.get(message.authorId) ?? "Ancien membre"}
                 </p>
               )}
               <div
@@ -86,7 +86,7 @@ export function MessageList({
                   {message.body}
                 </div>
                 <span className="mt-0.5 flex items-center gap-1 px-1 text-[0.7rem] text-muted-foreground">
-                  {message.status === "pending" && <Clock className="size-3" aria-label="Sending" />}
+                  {message.status === "pending" && <Clock className="size-3" aria-label="Envoi en cours" />}
                   {message.status === "failed" ? (
                     <button
                       type="button"
@@ -94,7 +94,7 @@ export function MessageList({
                       className="flex items-center gap-1 text-destructive hover:underline"
                     >
                       <AlertCircle className="size-3" />
-                      Not sent — tap to retry
+                      Non envoyé — touchez pour réessayer
                     </button>
                   ) : (
                     formatTime(message.createdAt)

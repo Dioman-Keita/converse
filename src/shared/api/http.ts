@@ -29,7 +29,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     const message =
       data && typeof data === "object" && "message" in data && typeof data.message === "string"
         ? data.message
-        : `Request failed (${res.status})`
+        : `La requête a échoué (${res.status})`
     throw new ApiError(res.status, message)
   }
   return data as T

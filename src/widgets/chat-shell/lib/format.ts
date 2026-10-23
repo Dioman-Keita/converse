@@ -1,7 +1,10 @@
-const time = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" })
-const weekday = new Intl.DateTimeFormat(undefined, { weekday: "short" })
-const date = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" })
-const longDate = new Intl.DateTimeFormat(undefined, {
+// UI is in French: dates follow it rather than the browser language.
+const LOCALE = "fr-FR"
+
+const time = new Intl.DateTimeFormat(LOCALE, { hour: "2-digit", minute: "2-digit" })
+const weekday = new Intl.DateTimeFormat(LOCALE, { weekday: "short" })
+const date = new Intl.DateTimeFormat(LOCALE, { day: "numeric", month: "short" })
+const longDate = new Intl.DateTimeFormat(LOCALE, {
   weekday: "long",
   day: "numeric",
   month: "long",
@@ -29,8 +32,8 @@ export function formatRelative(iso: string): string {
 export function formatDay(iso: string): string {
   const d = new Date(iso)
   const days = (startOfDay(new Date()) - startOfDay(d)) / DAY
-  if (days < 1) return "Today"
-  if (days < 2) return "Yesterday"
+  if (days < 1) return "Aujourd’hui"
+  if (days < 2) return "Hier"
   return longDate.format(d)
 }
 

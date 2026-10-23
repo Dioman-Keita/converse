@@ -49,12 +49,12 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
           <Button
             variant="ghost"
             size="icon"
-            aria-label="New conversation"
+            aria-label="Nouvelle conversation"
             onClick={() => setCreating((v) => !v)}
           >
             <MessageSquarePlus />
           </Button>
-          <Button variant="ghost" size="icon" aria-label="Sign out" onClick={onLogout}>
+          <Button variant="ghost" size="icon" aria-label="Se déconnecter" onClick={onLogout}>
             <LogOut />
           </Button>
         </header>
@@ -74,18 +74,18 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
 
         <div className="min-h-0 flex-1 overflow-y-auto">
           {state.roomsStatus === "loading" && (
-            <p className="p-4 text-sm text-muted-foreground">Loading conversations…</p>
+            <p className="p-4 text-sm text-muted-foreground">Chargement des conversations…</p>
           )}
           {state.roomsStatus === "error" && (
-            <p className="p-4 text-sm text-muted-foreground">Couldn&apos;t load conversations.</p>
+            <p className="p-4 text-sm text-muted-foreground">Impossible de charger les conversations.</p>
           )}
           {state.roomsStatus === "ready" && state.rooms.length === 0 && !creating && (
             <div className="flex flex-col items-center gap-3 p-6 text-center">
               <p className="text-sm text-muted-foreground">
-                No conversations yet. Start one with someone&apos;s email.
+                Aucune conversation pour l&apos;instant. Démarrez-en une avec l&apos;email d&apos;une personne inscrite.
               </p>
               <Button size="sm" onClick={() => setCreating(true)}>
-                New conversation
+                Nouvelle conversation
               </Button>
             </div>
           )}
@@ -107,7 +107,7 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
                 variant="ghost"
                 size="icon"
                 className="md:hidden"
-                aria-label="Back to conversations"
+                aria-label="Retour aux conversations"
                 onClick={() => selectRoom(undefined)}
               >
                 <ArrowLeft />
@@ -137,7 +137,7 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Select a conversation
+            Sélectionnez une conversation
           </div>
         )}
       </main>
@@ -146,7 +146,7 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
 }
 
 function ConnectionStatus({ status }: { status: "connecting" | "open" | "closed" }) {
-  const label = status === "open" ? "Online" : status === "connecting" ? "Connecting…" : "Offline — reconnecting"
+  const label = status === "open" ? "En ligne" : status === "connecting" ? "Connexion…" : "Hors ligne — reconnexion"
   return (
     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
       <span

@@ -15,20 +15,20 @@ export function HomePage() {
           Converse
         </p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-          Talk in realtime
+          Discutez en temps réel
         </h1>
         <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-          Chat and call with low-latency presence — self-hosted, your data
-          stays yours.
+          Messagerie instantanée auto-hébergée : vos conversations restent
+          chez vous.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/login">
-            <Button size="lg">Sign in</Button>
+            <Button size="lg">Se connecter</Button>
           </Link>
           <Link to="/register">
             <Button variant="outline" size="lg">
-              Create account
+              Créer un compte
             </Button>
           </Link>
         </div>

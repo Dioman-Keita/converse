@@ -29,7 +29,7 @@ export function AuthPage({ mode }: AuthPageProps): ReactNode {
             Converse
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Realtime chat &amp; calls
+            Messagerie en temps réel
           </p>
         </div>
 

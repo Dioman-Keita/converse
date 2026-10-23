@@ -24,7 +24,7 @@ export default defineHandler(async (event) => {
     })
   const user = inserted.at(0)
   if (!user) {
-    throw new HTTPError({ status: 409, message: "Email already registered" })
+    throw new HTTPError({ status: 409, message: "Un compte existe déjà avec cet email" })
   }
 
   const token = await createSession(user.id)

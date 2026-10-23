@@ -38,7 +38,7 @@ export function LoginForm() {
       })
       await navigate({ to: "/chat" })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign in failed")
+      setError(err instanceof Error ? err.message : "Échec de la connexion")
       setPending(false)
     }
   }
@@ -46,9 +46,9 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl tracking-tight">Welcome back</CardTitle>
+        <CardTitle className="text-xl tracking-tight">Bon retour</CardTitle>
         <CardDescription>
-          Sign in to continue to Converse
+          Connectez-vous pour accéder à Converse
         </CardDescription>
       </CardHeader>
 
@@ -60,14 +60,14 @@ export function LoginForm() {
               id="login-email"
               name="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="vous@exemple.com"
               autoComplete="email"
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="login-password">Password</Label>
+            <Label htmlFor="login-password">Mot de passe</Label>
             <Input
               id="login-password"
               name="password"
@@ -82,15 +82,15 @@ export function LoginForm() {
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
-            {pending ? "Signing in…" : "Sign in"}
+            {pending ? "Connexion…" : "Se connecter"}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{" "}
+            Pas encore de compte ?{" "}
             <Link
               to="/register"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Create one
+              Créer un compte
             </Link>
           </p>
         </CardFooter>

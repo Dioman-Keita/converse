@@ -47,11 +47,17 @@ export default defineHandler(async (event) => {
     : []
 
   const missing = emails.filter((e) => !members.some((m) => m.email === e))
-  if (missing.length) throw badRequest(`Unknown users: ${missing.join(", ")}`)
+  if (missing.length) {
+    throw badRequest(
+      missing.length === 1
+        ? `Aucun compte avec l’email ${missing[0]}`
+        : `Aucun compte avec ces emails : ${missing.join(", ")}`,
+    )
+  }
 
   const memberIds = [...new Set([user.id, ...members.map((m) => m.id)])]
   if (type === "direct" && memberIds.length !== 2) {
-    throw badRequest("A direct conversation needs exactly one other person")
+    throw badRequest("Une conversation privée se fait avec une seule autre personne")
   }
 
   if (type === "direct") {
