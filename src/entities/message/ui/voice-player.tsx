@@ -73,13 +73,39 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
         onClick={toggle}
         aria-label={isPlaying ? "Mettre en pause" : "Écouter le message vocal"}
         className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-full transition-colors",
+          "relative flex size-8 shrink-0 items-center justify-center rounded-full",
+          "transition-[background-color,transform] duration-150 active:scale-90 motion-reduce:transition-none",
           mine
             ? "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
             : "bg-foreground/10 text-foreground hover:bg-foreground/20",
         )}
       >
-        {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 translate-x-px" />}
+        {/* Soft pulse around the button while the note plays. */}
+        {isPlaying && (
+          <span
+            aria-hidden
+            className={cn(
+              "absolute inset-0 animate-ping rounded-full opacity-30 motion-reduce:hidden",
+              mine ? "bg-primary-foreground" : "bg-foreground",
+            )}
+            style={{ animationDuration: "1.6s" }}
+          />
+        )}
+        {/* Both icons stay mounted and cross-fade with a quarter turn when the state flips. */}
+        <Play
+          aria-hidden
+          className={cn(
+            "absolute size-4 translate-x-px transition-all duration-200 ease-out motion-reduce:transition-none",
+            isPlaying ? "scale-50 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100",
+          )}
+        />
+        <Pause
+          aria-hidden
+          className={cn(
+            "absolute size-4 transition-all duration-200 ease-out motion-reduce:transition-none",
+            isPlaying ? "scale-100 rotate-0 opacity-100" : "scale-50 rotate-90 opacity-0",
+          )}
+        />
       </button>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div
