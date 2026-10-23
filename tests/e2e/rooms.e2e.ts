@@ -16,7 +16,7 @@ describe("rooms", () => {
     expect(res.json.room.type).toBe("direct")
     expect(res.json.room.members).toHaveLength(2)
     for (const member of res.json.room.members) {
-      expect(Object.keys(member).sort()).toEqual(["email", "id", "name"])
+      expect(Object.keys(member).sort()).toEqual(["email", "id", "lastSeenAt", "name", "online"])
     }
     expect(res.json.room.members.map((m: { id: string }) => m.id).sort()).toEqual(
       [alice.user.id, bob.user.id].sort(),
