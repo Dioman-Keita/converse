@@ -6,6 +6,7 @@
  */
 import {
   index,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -71,6 +72,8 @@ export const roomMembers = pgTable(
   ],
 )
 
+export const messageKind = pgEnum("message_kind", ["text", "voice"])
+
 export const messages = pgTable(
   "messages",
   {
@@ -81,7 +84,12 @@ export const messages = pgTable(
     authorId: uuid("author_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    kind: messageKind("kind").notNull().default("text"),
+    // Empty for voice messages.
     body: text("body").notNull(),
+    // Voice: file path relative to UPLOADS_DIR (served by /api/media/:messageId) and length.
+    mediaPath: text("media_path"),
+    mediaDurationMs: integer("media_duration_ms"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

@@ -2,7 +2,9 @@
 
 Chat temps réel **auto-hébergé** : ton PC (ou n'importe quelle machine avec Docker) fait office de serveur, et n'importe qui sur Internet peut l'utiliser depuis un navigateur.
 
-- Comptes (email + mot de passe), conversations directes et de groupe, messages en temps réel, historique.
+- Comptes (email + mot de passe), conversations privées et de groupe, messages texte et **vocaux** en temps réel, historique.
+- Statut en ligne, « en ligne il y a… » et « en train d'écrire ».
+- Interface en français, utilisable sur téléphone et sur ordinateur.
 - Une seule commande pour tout lancer : `docker compose up -d`.
 - Toutes les données restent chez toi (Postgres) avec sauvegarde automatique quotidienne.
 - Accès public **sans configurer ta box** grâce à un tunnel Cloudflare sortant.
@@ -142,17 +144,19 @@ ngrok offre un domaine statique gratuit, mais sur le plan gratuit **chaque visit
 
 ## Utiliser l'app
 
-1. Ouvre l'adresse (locale ou publique) et clique sur **Create account**.
-2. Une fois connecté, clique sur l'icône **New conversation** (en haut à gauche) :
-   - **Direct** : l'email d'une personne déjà inscrite ;
-   - **Group** : un nom de groupe + les emails des membres, séparés par des virgules.
+1. Ouvre l'adresse (locale ou publique) et clique sur **Créer un compte**.
+2. Une fois connecté, clique sur l'icône **Nouvelle conversation** (en haut à gauche) :
+   - **Privée** : l'email d'une personne déjà inscrite ;
+   - **Groupe** : un nom de groupe + les emails des membres, séparés par des virgules.
 3. Les messages arrivent en temps réel. `Entrée` envoie, `Maj + Entrée` fait un retour à la ligne.
-4. Une pastille indique les messages non lus ; le point sous ton nom indique l'état de la connexion (**Online**, **Connecting…**, **Offline — reconnecting**).
+4. **Message vocal** : zone de texte vide → touche le **micro** 🎤, parle, puis **Envoyer** (ou la corbeille pour annuler). 5 minutes maximum ; le navigateur demande l'accès au micro la première fois.
+5. Une pastille indique les messages non lus ; le point sous ton nom indique l'état de la connexion (**En ligne**, **Connexion…**, **Hors ligne — reconnexion**). Dans une conversation, l'en-tête montre si l'autre personne est en ligne ou depuis quand elle ne l'est plus, et quand elle écrit.
 
 Bon à savoir :
 - les personnes doivent **s'inscrire avant** qu'on puisse démarrer une conversation avec elles ;
 - ouvrir une conversation directe qui existe déjà la rouvre au lieu d'en créer une deuxième ;
-- un message non parti s'affiche en rouge : touche-le pour le renvoyer.
+- un message non parti s'affiche en rouge : touche-le pour le renvoyer (vocaux compris, tant que la page n'a pas été rechargée) ;
+- le micro ne fonctionne qu'en **HTTPS** (adresse du tunnel) ou sur `localhost`, pas via une adresse `http://192.168…` du réseau local.
 
 ---
 
@@ -187,7 +191,12 @@ Leurs sessions, adhésions et messages sont supprimés en cascade.
 
 ## Sauvegardes et restauration
 
-Le service `backup` écrit un dump Postgres compressé dans `./backups` **au démarrage puis toutes les 24 h**, et garde les **7 derniers** (réglable via `BACKUP_KEEP` et `BACKUP_INTERVAL` dans `.env`).
+Le service `backup` écrit dans `./backups`, **au démarrage puis toutes les 24 h**, et garde les **7 derniers** de chaque (réglable via `BACKUP_KEEP` et `BACKUP_INTERVAL` dans `.env`) :
+
+- `converse-AAAAMMJJ-HHMMSS.dump` : la base (comptes, conversations, messages) ;
+- `converse-uploads-AAAAMMJJ-HHMMSS.tar.gz` : les fichiers audio des messages vocaux.
+
+Les fichiers audio vivent dans le volume Docker `uploads` (pas dans `data/`) : utilise ces archives pour les sauvegarder ou les déplacer. Il faut **les deux fichiers d'une même sauvegarde** pour restaurer des vocaux qui se lisent.
 
 Forcer une sauvegarde immédiate :
 
@@ -202,12 +211,13 @@ Pour mettre tes sauvegardes à l'abri, synchronise le dossier `backups/` avec On
 ```bash
 docker compose stop app
 docker compose exec -T db pg_restore -U converse -d converse --clean --if-exists < backups/converse-AAAAMMJJ-HHMMSS.dump
+docker compose run --rm --no-deps -v ./backups:/backups:ro app tar -xzf /backups/converse-uploads-AAAAMMJJ-HHMMSS.tar.gz -C /app/data/uploads
 docker compose start app
 ```
 
 ### Changer de machine
 
-1. Sur la nouvelle machine : `git clone`, puis copie ton `.env` et le dernier fichier de `backups/`.
+1. Sur la nouvelle machine : `git clone`, puis copie ton `.env` et la dernière sauvegarde de `backups/` (le `.dump` **et** le `.tar.gz` correspondant).
 2. `docker compose up -d`, puis restaure la sauvegarde (commande ci-dessus).
 3. Avec un tunnel nommé, l'adresse publique reste la même ; avec Quick Tunnel, une nouvelle adresse est générée.
 
@@ -289,6 +299,18 @@ Le WebSocket est coupé ; il se reconnecte seul (et immédiatement au retour sur
 
 **L'adresse trycloudflare ne répond plus**
 Le tunnel a redémarré et l'adresse a changé : récupère la nouvelle avec `docker compose logs quick-tunnel | grep trycloudflare.com`.
+
+**`tar (child): Cannot connect to C: resolve failed` en restaurant les vocaux**
+Git Bash réécrit les chemins `/backups/…` en chemins Windows. Lance la commande depuis PowerShell, ou préfixe-la par `MSYS_NO_PATHCONV=1`.
+
+**Le bouton micro n'apparaît pas**
+Le navigateur n'autorise le micro qu'en HTTPS ou sur `localhost`. Utilise l'adresse du tunnel (`https://…`) plutôt qu'une adresse `http://` du réseau local.
+
+**« Accès au micro refusé »**
+Autorise le micro pour ce site dans les réglages du navigateur (icône du cadenas dans la barre d'adresse), puis réessaie.
+
+**« Les messages vocaux ne sont pas disponibles sur ce serveur »**
+ffmpeg est absent : c'est le cas avec `npm run dev` sans ffmpeg installé sur la machine. L'image Docker l'inclut.
 
 **Redirigé vers la page de connexion**
 La session a expiré (30 jours) ou tu t'es déconnecté ailleurs : reconnecte-toi.

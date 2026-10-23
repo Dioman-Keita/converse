@@ -13,6 +13,8 @@ const MAX_BACKOFF_MS = 15_000
  * - Reconnects with exponential backoff, immediately when the tab becomes
  *   visible again or the network comes back (mobile browsers drop sockets).
  * - Remembers room subscriptions and replays them after every reconnect.
+ * - Retries a subscription the server failed to confirm (e.g. database briefly
+ *   unavailable), so a socket never stays open while silently deaf to a room.
  */
 export class RealtimeClient {
   private ws: WebSocket | undefined
@@ -20,6 +22,8 @@ export class RealtimeClient {
   private retryTimer: ReturnType<typeof setTimeout> | undefined
   private stopped = true
   private readonly rooms = new Set<string>()
+  private readonly confirmed = new Set<string>()
+  private readonly subscribeRetries = new Map<string, { attempt: number; timer: ReturnType<typeof setTimeout> }>()
   private readonly listeners = new Set<EventListener>()
   private readonly statusListeners = new Set<StatusListener>()
   status: RealtimeStatus = "closed"
@@ -40,6 +44,7 @@ export class RealtimeClient {
     this.ws?.close()
     this.ws = undefined
     this.rooms.clear()
+    this.clearSubscriptionState()
     this.setStatus("closed")
   }
 
@@ -82,8 +87,15 @@ export class RealtimeClient {
       }
       if (event.type === "ready") {
         this.attempt = 0
+        this.clearSubscriptionState()
         this.setStatus("open")
         for (const roomId of this.rooms) this.send({ type: "subscribe", roomId })
+      } else if (event.type === "subscribed") {
+        this.confirmed.add(event.roomId)
+        clearTimeout(this.subscribeRetries.get(event.roomId)?.timer)
+        this.subscribeRetries.delete(event.roomId)
+      } else if (event.type === "error" && event.code === "internal" && event.roomId) {
+        this.retrySubscribe(event.roomId)
       }
       for (const listener of this.listeners) listener(event)
     }
@@ -96,6 +108,24 @@ export class RealtimeClient {
       const delay = Math.min(MAX_BACKOFF_MS, 500 * 2 ** this.attempt++)
       this.retryTimer = setTimeout(() => this.open(), delay)
     }
+  }
+
+  private retrySubscribe(roomId: string) {
+    if (!this.rooms.has(roomId) || this.confirmed.has(roomId)) return
+    const previous = this.subscribeRetries.get(roomId)
+    clearTimeout(previous?.timer)
+    const attempt = (previous?.attempt ?? 0) + 1
+    const timer = setTimeout(
+      () => this.send({ type: "subscribe", roomId }),
+      Math.min(MAX_BACKOFF_MS, 1_000 * 2 ** (attempt - 1)),
+    )
+    this.subscribeRetries.set(roomId, { attempt, timer })
+  }
+
+  private clearSubscriptionState() {
+    for (const { timer } of this.subscribeRetries.values()) clearTimeout(timer)
+    this.subscribeRetries.clear()
+    this.confirmed.clear()
   }
 
   private readonly reconnectNow = () => {

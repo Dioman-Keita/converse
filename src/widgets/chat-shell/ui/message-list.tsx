@@ -1,5 +1,6 @@
 import { AlertCircle, Clock } from "lucide-react"
 
+import { VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import type { Room } from "@/entities/room"
 import { cn } from "@/shared/lib/utils"
@@ -86,7 +87,15 @@ export function MessageList({
                     message.status === "failed" && "bg-destructive/15 text-foreground ring-1 ring-destructive/50",
                   )}
                 >
-                  {message.body}
+                  {message.kind === "voice" && message.voice ? (
+                    <VoicePlayer
+                      src={message.voice.url}
+                      durationMs={message.voice.durationMs}
+                      mine={mine && message.status !== "failed"}
+                    />
+                  ) : (
+                    message.body
+                  )}
                 </div>
                 <span className="mt-0.5 flex items-center gap-1 px-1 text-[0.7rem] text-muted-foreground">
                   {message.status === "pending" && <Clock className="size-3" aria-label="Envoi en cours" />}

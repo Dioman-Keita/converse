@@ -59,11 +59,13 @@ export default defineWebSocketHandler({
     } catch (error) {
       console.error("[converse] ws event failed", error)
       const clientId = "clientId" in clientEvent ? clientEvent.clientId : undefined
+      const roomId = "roomId" in clientEvent ? clientEvent.roomId : undefined
       send(peer, {
         type: "error",
         code: "internal",
         message: "Server error",
         clientId: typeof clientId === "string" ? clientId : undefined,
+        roomId: typeof roomId === "string" ? roomId : undefined,
       })
     }
   },
@@ -90,7 +92,12 @@ async function handleEvent(peer: Peer, event: ClientEvent) {
   if (!context.rooms.has(event.roomId)) {
     if (event.type === "unsubscribe") return
     if (!(await isRoomMember(event.roomId, context.userId))) {
-      return send(peer, { type: "error", code: "forbidden", message: "Not a member of this room" })
+      return send(peer, {
+        type: "error",
+        code: "forbidden",
+        message: "Not a member of this room",
+        roomId: event.roomId,
+      })
     }
   }
 
@@ -118,7 +125,7 @@ async function handleEvent(peer: Peer, event: ClientEvent) {
       // Sending implies interest: the sender also receives the echo (with its clientId).
       context.rooms.add(event.roomId)
       joinRoom(event.roomId, peer)
-      await postMessage(event.roomId, context.userId, body, clientId)
+      await postMessage(event.roomId, context.userId, { kind: "text", body }, clientId)
       return
     }
 

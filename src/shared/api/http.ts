@@ -12,15 +12,22 @@ export class ApiError extends Error {
 type ApiOptions = {
   method?: "GET" | "POST"
   json?: unknown
+  /** Raw binary body (e.g. a recorded voice note), sent with its own content type. */
+  blob?: Blob
 }
 
-/** Same-origin JSON request; the session cookie is sent automatically. */
+/** Same-origin JSON API request; the session cookie is sent automatically. */
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
-  const hasBody = options.json !== undefined
+  const { json, blob } = options
+  const hasBody = json !== undefined || blob !== undefined
   const res = await fetch(path, {
     method: options.method ?? (hasBody ? "POST" : "GET"),
-    headers: hasBody ? { "content-type": "application/json" } : undefined,
-    body: hasBody ? JSON.stringify(options.json) : undefined,
+    headers: blob
+      ? { "content-type": blob.type || "application/octet-stream" }
+      : json !== undefined
+        ? { "content-type": "application/json" }
+        : undefined,
+    body: blob ?? (json !== undefined ? JSON.stringify(json) : undefined),
     credentials: "same-origin",
   })
 

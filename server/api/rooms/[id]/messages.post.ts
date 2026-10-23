@@ -22,5 +22,5 @@ export default defineHandler(async (event) => {
   const text = requireString(body, "body", { max: MAX_MESSAGE_LENGTH })
   const clientId = typeof body.clientId === "string" ? body.clientId : undefined
 
-  return { message: await postMessage(roomId, user.id, text, clientId) }
+  return { message: await postMessage(roomId, user.id, { kind: "text", body: text }, clientId) }
 })

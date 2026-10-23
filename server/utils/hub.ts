@@ -84,7 +84,11 @@ export type MessageDto = {
   id: string
   roomId: string
   authorId: string
+  kind: "text" | "voice"
+  /** Empty for voice messages. */
   body: string
+  /** Voice messages only: AAC/M4A audio, readable by room members. */
+  voice?: { url: string; durationMs: number }
   createdAt: string
 }
 
@@ -113,7 +117,8 @@ export type ServerEvent =
   | { type: "room"; room: RoomDto }
   | { type: "presence"; userId: string; online: boolean; lastSeenAt: string | null }
   | { type: "typing"; roomId: string; userId: string; typing: boolean }
-  | { type: "error"; code: string; message: string; clientId?: string }
+  /** `roomId` is set when the failed event targeted a room (clients may retry a subscribe). */
+  | { type: "error"; code: string; message: string; clientId?: string; roomId?: string }
 
 /** Client → server events. */
 export type ClientEvent =

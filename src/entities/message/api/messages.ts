@@ -21,3 +21,16 @@ export async function postMessage(
   )
   return message
 }
+
+/** Uploads a recorded voice note; the server converts it and broadcasts the message. */
+export async function postVoice(
+  roomId: string,
+  audio: Blob,
+  clientId: string,
+): Promise<Message> {
+  const { message } = await api<{ message: Message }>(
+    `/api/rooms/${roomId}/voice?clientId=${encodeURIComponent(clientId)}`,
+    { blob: audio },
+  )
+  return message
+}

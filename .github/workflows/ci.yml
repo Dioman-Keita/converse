@@ -39,6 +39,10 @@ jobs:
 
       - run: npm ci
 
+      # Voice notes are converted with ffmpeg (server/utils/voice.ts).
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
       # src/routeTree.gen.ts is gitignored; tsc needs it before the build creates it.
       - name: Generate routes
         run: npm run generate-routes
@@ -48,6 +52,9 @@ jobs:
 
       - name: Lint
         run: npx eslint src server tests
+
+      - name: Unit tests
+        run: npm run test
 
       - name: Build
         run: npm run build

@@ -47,7 +47,8 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | Auth | scrypt passwords, opaque session tokens (SHA-256 stored) |
 | Session transport | `converse_session` cookie (web) or `Authorization: Bearer` (Android) |
 | Realtime | Nitro WebSocket + in-memory room hub (single process) |
-| Backups | `backup` service: `pg_dump -Fc` every 24 h, keeps 7 |
+| Voice notes | Browser MediaRecorder → raw upload → ffmpeg to mono AAC/M4A (`server/utils/voice.ts`) → `uploads` volume |
+| Backups | `backup` service every 24 h, keeps 7: `pg_dump -Fc` + tar.gz of the `uploads` volume |
 
 ### REST
 
@@ -61,6 +62,8 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | POST | `/api/rooms` | `{ type: "direct" \| "group", memberEmails, name? }` → `{ room, created }` (direct reuses an existing room; group needs `name`) |
 | GET | `/api/rooms/:id/messages` | `?before=<nextCursor>&limit=50` → `{ messages, nextCursor }` (newest first) |
 | POST | `/api/rooms/:id/messages` | `{ body, clientId? }` |
+| POST | `/api/rooms/:id/voice` | raw audio body (`audio/*`, ≤ 10 MB, 0.3 s–5 min), `?clientId=` → `{ message }` |
+| GET | `/api/media/:messageId` | voice audio (`audio/mp4`), room members only, supports `Range` (needed by iOS Safari) |
 
 ### WebSocket `/ws`
 
@@ -78,7 +81,8 @@ Server → client:
 ```jsonc
 { "type": "ready", "userId": "…" }
 { "type": "subscribed", "roomId": "…" }
-{ "type": "message", "message": { "id", "roomId", "authorId", "body", "createdAt" }, "clientId": "…" }
+{ "type": "message", "message": { "id", "roomId", "authorId", "kind": "text", "body", "createdAt" }, "clientId": "…" }
+{ "type": "message", "message": { "id", "roomId", "authorId", "kind": "voice", "body": "", "voice": { "url": "/api/media/…", "durationMs": 4200 }, "createdAt" } }
 { "type": "room", "room": { "id", "name", "type", "createdAt", "lastMessageAt", "members": [{ "id", "name", "email", "online", "lastSeenAt" }] } }
 { "type": "presence", "userId": "…", "online": false, "lastSeenAt": "2026-10-23T14:29:46.000Z" }
 { "type": "typing", "roomId": "…", "userId": "…", "typing": true }
