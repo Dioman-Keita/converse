@@ -36,7 +36,7 @@ export function CreateRoomForm({ onCreated, onCancel }: CreateRoomFormProps) {
       )
       onCreated(room)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create conversation")
+      setError(err instanceof Error ? err.message : "Impossible de créer la conversation")
       setPending(false)
     }
   }
@@ -59,27 +59,27 @@ export function CreateRoomForm({ onCreated, onCancel }: CreateRoomFormProps) {
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            {value === "direct" ? "Direct" : "Group"}
+            {value === "direct" ? "Privée" : "Groupe"}
           </button>
         ))}
       </div>
 
       {type === "group" && (
         <div className="grid gap-1.5">
-          <Label htmlFor="room-name">Group name</Label>
-          <Input id="room-name" name="name" placeholder="Weekend plans" required />
+          <Label htmlFor="room-name">Nom du groupe</Label>
+          <Input id="room-name" name="name" placeholder="Sortie du week-end" required />
         </div>
       )}
 
       <div className="grid gap-1.5">
         <Label htmlFor="room-emails">
-          {type === "direct" ? "Their email" : "Members' emails"}
+          {type === "direct" ? "Son email" : "Emails des membres"}
         </Label>
         <Input
           id="room-emails"
           name="emails"
           type={type === "direct" ? "email" : "text"}
-          placeholder={type === "direct" ? "friend@example.com" : "a@example.com, b@example.com"}
+          placeholder={type === "direct" ? "ami@exemple.com" : "a@exemple.com, b@exemple.com"}
           autoComplete="off"
           required={type === "direct"}
         />
@@ -93,10 +93,10 @@ export function CreateRoomForm({ onCreated, onCancel }: CreateRoomFormProps) {
 
       <div className="flex gap-2">
         <Button type="submit" size="sm" className="flex-1" disabled={pending}>
-          {pending ? "Starting…" : "Start"}
+          {pending ? "Création…" : "Démarrer"}
         </Button>
         <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
-          Cancel
+          Annuler
         </Button>
       </div>
     </form>

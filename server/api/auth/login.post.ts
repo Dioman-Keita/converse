@@ -23,7 +23,7 @@ export default defineHandler(async (event) => {
   // Always run scrypt, even for unknown emails, so response time doesn't reveal accounts.
   const valid = await verifyPassword(password, row?.passwordHash ?? (await dummyHash))
   if (!row || !valid) {
-    throw new HTTPError({ status: 401, message: "Invalid email or password" })
+    throw new HTTPError({ status: 401, message: "Email ou mot de passe incorrect" })
   }
 
   const token = await createSession(row.id)

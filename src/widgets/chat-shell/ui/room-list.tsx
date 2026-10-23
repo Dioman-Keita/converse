@@ -50,7 +50,7 @@ export function RoomList({
                 <span className="flex items-center gap-2">
                   <span className="truncate text-xs text-muted-foreground">
                     {room.type === "group"
-                      ? `${room.members.length} members`
+                      ? `${room.members.length} membres`
                       : room.members.find((m) => m.id !== currentUserId)?.email}
                   </span>
                   {count > 0 && (

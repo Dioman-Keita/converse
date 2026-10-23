@@ -36,7 +36,7 @@ export function RegisterForm() {
       confirmPassword: String(form.get("confirmPassword")),
     }
     if (credentials.password !== credentials.confirmPassword) {
-      setError("Passwords do not match")
+      setError("Les mots de passe ne correspondent pas")
       return
     }
 
@@ -46,7 +46,7 @@ export function RegisterForm() {
       await register(credentials)
       await navigate({ to: "/chat" })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Sign up failed")
+      setError(err instanceof Error ? err.message : "Échec de l'inscription")
       setPending(false)
     }
   }
@@ -54,21 +54,21 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-sm border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl tracking-tight">Create your account</CardTitle>
+        <CardTitle className="text-xl tracking-tight">Créer votre compte</CardTitle>
         <CardDescription>
-          Start chatting and calling in realtime
+          Commencez à discuter en temps réel
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-2">
-            <Label htmlFor="register-name">Name</Label>
+            <Label htmlFor="register-name">Nom</Label>
             <Input
               id="register-name"
               name="name"
               type="text"
-              placeholder="Jane Doe"
+              placeholder="Awa Traoré"
               autoComplete="name"
               required
             />
@@ -80,14 +80,14 @@ export function RegisterForm() {
               id="register-email"
               name="email"
               type="email"
-              placeholder="you@example.com"
+              placeholder="vous@exemple.com"
               autoComplete="email"
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="register-password">Password</Label>
+            <Label htmlFor="register-password">Mot de passe</Label>
             <Input
               id="register-password"
               name="password"
@@ -99,7 +99,7 @@ export function RegisterForm() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="register-confirm-password">Confirm password</Label>
+            <Label htmlFor="register-confirm-password">Confirmer le mot de passe</Label>
             <Input
               id="register-confirm-password"
               name="confirmPassword"
@@ -114,15 +114,15 @@ export function RegisterForm() {
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
-            {pending ? "Creating account…" : "Create account"}
+            {pending ? "Création…" : "Créer mon compte"}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
+            Déjà un compte ?{" "}
             <Link
               to="/login"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Sign in
+              Se connecter
             </Link>
           </p>
         </CardFooter>

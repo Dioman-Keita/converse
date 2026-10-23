@@ -11,7 +11,7 @@ import type { SessionUser } from "./auth"
 
 export async function requireUser(event: H3Event): Promise<SessionUser> {
   const user = await getSessionUser(event.req.headers)
-  if (!user) throw new HTTPError({ status: 401, message: "Not authenticated" })
+  if (!user) throw new HTTPError({ status: 401, message: "Non connecté" })
   return user
 }
 
@@ -47,6 +47,14 @@ export async function readJsonObject(
   return body as Record<string, unknown>
 }
 
+// User-facing names of request fields, for validation messages shown in the app.
+const FIELD_LABELS: Record<string, string> = {
+  name: "Le nom",
+  email: "L’email",
+  password: "Le mot de passe",
+  body: "Le message",
+}
+
 export function requireString(
   body: Record<string, unknown>,
   key: string,
@@ -56,7 +64,8 @@ export function requireString(
   if (typeof value !== "string") throw badRequest(`"${key}" must be a string`)
   const trimmed = key === "password" ? value : value.trim()
   if (trimmed.length < min || trimmed.length > max) {
-    throw badRequest(`"${key}" must be ${min}-${max} characters`)
+    const label = FIELD_LABELS[key] ?? `"${key}"`
+    throw badRequest(`${label} doit contenir entre ${min} et ${max} caractères`)
   }
   return trimmed
 }
