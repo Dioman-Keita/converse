@@ -12,11 +12,13 @@ export default defineHandler(async (event) => {
   const email = requireString(body, "email", { max: 254 }).toLowerCase()
   const password = requireString(body, "password", { max: 200 })
 
-  const [row] = await db
-    .select()
-    .from(schema.users)
-    .where(eq(schema.users.email, email))
-    .limit(1)
+  const row = (
+    await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1)
+  ).at(0)
 
   // Always run scrypt, even for unknown emails, so response time doesn't reveal accounts.
   const valid = await verifyPassword(password, row?.passwordHash ?? (await dummyHash))

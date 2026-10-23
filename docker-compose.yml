@@ -1,7 +1,8 @@
 # Converse — self-hosted stack.
 #
-#   docker compose up -d                     # local only (http://localhost:3000)
-#   docker compose --profile tunnel up -d    # + public access through Cloudflare Tunnel
+#   docker compose up -d                           # local only (http://localhost:3000)
+#   docker compose --profile quick-tunnel up -d    # + temporary public URL (no account)
+#   docker compose --profile tunnel up -d          # + stable public URL (your domain)
 #
 # All state lives in ./data (Postgres) and ./backups (daily dumps).
 
@@ -56,6 +57,18 @@ services:
           sleep "$$BACKUP_INTERVAL"
         done
 
+  # Instant public URL, no Cloudflare account or domain needed.
+  # The https://<random>.trycloudflare.com address changes on every restart:
+  #   docker compose logs quick-tunnel | grep trycloudflare.com
+  quick-tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["quick-tunnel"]
+    command: tunnel --no-autoupdate --url http://app:3000
+    depends_on:
+      - app
+
+  # Stable URL on your own domain (named tunnel, token from the Cloudflare dashboard).
   tunnel:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped

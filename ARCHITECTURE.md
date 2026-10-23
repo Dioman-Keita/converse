@@ -58,7 +58,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | POST | `/api/auth/logout` | — |
 | GET | `/api/auth/me` | — |
 | GET | `/api/rooms` | — |
-| POST | `/api/rooms` | `{ name, type: "direct" \| "group", memberEmails }` |
+| POST | `/api/rooms` | `{ type: "direct" \| "group", memberEmails, name? }` → `{ room, created }` (direct reuses an existing room; group needs `name`) |
 | GET | `/api/rooms/:id/messages` | `?before=<nextCursor>&limit=50` → `{ messages, nextCursor }` (newest first) |
 | POST | `/api/rooms/:id/messages` | `{ body, clientId? }` |
 
@@ -78,17 +78,19 @@ Server → client:
 { "type": "ready", "userId": "…" }
 { "type": "subscribed", "roomId": "…" }
 { "type": "message", "message": { "id", "roomId", "authorId", "body", "createdAt" }, "clientId": "…" }
+{ "type": "room", "room": { "id", "name", "type", "createdAt", "lastMessageAt", "members": [{ "id", "name", "email" }] } }
 { "type": "error", "code": "forbidden", "message": "…", "clientId": "…" }
 ```
 
 `clientId` lets the sender match the echo with its optimistic message.
+`room` is pushed to every member when a conversation they belong to is created; clients then `subscribe` to it.
 Types live in `server/utils/hub.ts` (contract shared with the Android app).
 
 ## Clients
 
 | Client | Notes |
 | --- | --- |
-| Web (`src/`) | For iOS and desktop users. Same origin → cookie auth. |
+| Web (`src/`) | For iOS and desktop users. Same origin → cookie auth. `/chat` is client-only (`ssr: false`), subscribes to every room, reconnects with backoff and resyncs history after a reconnect. |
 | Android | Separate project. Bearer token, reconnects `/ws` on foreground. No push notifications. |
 
 ## Constraints (by design)
@@ -103,7 +105,9 @@ Types live in `server/utils/hub.ts` (contract shared with the Android app).
 ```bash
 cp .env.example .env                    # set DB_PASSWORD (+ TUNNEL_TOKEN)
 docker compose up -d                    # local: http://localhost:3000
-docker compose --profile tunnel up -d   # public via Cloudflare Tunnel
+docker compose --profile quick-tunnel up -d   # temporary public URL, no account
+docker compose logs quick-tunnel | grep trycloudflare.com
+docker compose --profile tunnel up -d   # stable public URL via your domain
 ```
 
 Move to another machine: copy the repo + `.env`, `docker compose up -d`, then restore:
