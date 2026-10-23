@@ -59,7 +59,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | GET | `/api/auth/me` | — |
 | GET | `/api/rooms` | — |
 | POST | `/api/rooms` | `{ name, type: "direct" \| "group", memberEmails }` |
-| GET | `/api/rooms/:id/messages` | `?before=<ISO>&limit=50` (newest first) |
+| GET | `/api/rooms/:id/messages` | `?before=<nextCursor>&limit=50` → `{ messages, nextCursor }` (newest first) |
 | POST | `/api/rooms/:id/messages` | `{ body, clientId? }` |
 
 ### WebSocket `/ws`

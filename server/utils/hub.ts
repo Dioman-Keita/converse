@@ -29,7 +29,14 @@ export function broadcast(roomId: string, event: ServerEvent) {
   const sockets = rooms.get(roomId)
   if (!sockets) return
   const data = JSON.stringify(event)
-  for (const socket of sockets) socket.send(data)
+  for (const socket of sockets) {
+    // One broken socket must not stop the fan-out to the others.
+    try {
+      socket.send(data)
+    } catch {
+      leaveRoom(roomId, socket)
+    }
+  }
 }
 
 export type MessageDto = {

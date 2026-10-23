@@ -84,5 +84,5 @@ export const messages = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("messages_room_time_idx").on(t.roomId, t.createdAt)],
+  (t) => [index("messages_room_time_idx").on(t.roomId, t.createdAt, t.id)],
 )
