@@ -12,8 +12,7 @@ const config = defineConfig({
   plugins: [
     devtools(),
     nitro({
-      // Pin the target: building under Bun (Docker) would otherwise auto-select
-      // the Bun preset, but the runtime image runs Node.
+      // Pin the target so the build never depends on the runtime it happens to run under.
       preset: "node-server",
       serverDir: "./server",
       features: { websocket: true },

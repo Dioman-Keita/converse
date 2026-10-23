@@ -43,7 +43,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | Concern | Implementation |
 | --- | --- |
 | Database | Postgres 17 + Drizzle ORM (`server/db/schema.ts`) |
-| Migrations | `bun run db:generate` → applied automatically on server start |
+| Migrations | `npm run db:generate` → applied automatically on server start |
 | Auth | scrypt passwords, opaque session tokens (SHA-256 stored) |
 | Session transport | `converse_session` cookie (web) or `Authorization: Bearer` (Android) |
 | Realtime | Nitro WebSocket + in-memory room hub (single process) |

@@ -2,7 +2,7 @@
  * Postgres schema (Drizzle) — source of truth for Converse data.
  * Mirrors domain types under `src/entities/*`.
  *
- * Migrations: `bun run db:generate` then `bun run db:migrate`.
+ * Migrations: `npm run db:generate` then `npm run db:migrate`.
  */
 import {
   index,
