@@ -15,12 +15,12 @@ import {
 
 /**
  * Register form — ElevenLabs UI aesthetic, matched to LoginForm.
- * Submit is wired for future Convex Auth registration.
+ * Submit will call `POST /api/auth/register` (server/api/auth).
  */
 export function RegisterForm() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // Future: Convex Auth / Better Auth sign-up
+    // TODO: POST /api/auth/register
   }
 
   return (

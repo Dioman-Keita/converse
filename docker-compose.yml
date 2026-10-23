@@ -1,0 +1,67 @@
+# Converse — self-hosted stack.
+#
+#   docker compose up -d                     # local only (http://localhost:3000)
+#   docker compose --profile tunnel up -d    # + public access through Cloudflare Tunnel
+#
+# All state lives in ./data (Postgres) and ./backups (daily dumps).
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: converse
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      POSTGRES_DB: converse
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U converse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    # No `ports:` on purpose — Postgres is only reachable from the Docker network.
+
+  app:
+    build: .
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://converse:${DB_PASSWORD}@db:5432/converse
+      PORT: 3000
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backup:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      PGPASSWORD: ${DB_PASSWORD}
+      BACKUP_KEEP: ${BACKUP_KEEP:-7}
+      BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
+    volumes:
+      - ./backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          f=/backups/converse-$$(date +%Y%m%d-%H%M%S).dump
+          pg_dump -h db -U converse -Fc converse > "$$f" && echo "backup: $$f"
+          ls -1t /backups/converse-*.dump | tail -n +$$((BACKUP_KEEP + 1)) | xargs -r rm --
+          sleep "$$BACKUP_INTERVAL"
+        done
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - app

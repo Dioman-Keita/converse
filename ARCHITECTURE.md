@@ -1,53 +1,113 @@
 # Converse architecture
 
-Feature-Sliced Design (FSD) + Convex-ready realtime core.
-
-## Layers
+Self-hosted realtime chat. One `docker compose up` on any machine; public access
+through an outbound Cloudflare Tunnel (no router / port-forwarding needed).
 
 ```
-src/
+Web app (browser, iOS users)  ─┐
+Android app (separate project) ─┼─ HTTPS / WSS ─→ Cloudflare Tunnel
+                                │                        ↑ outbound
+                                │   ┌──── docker compose ┼─────────────┐
+                                │   │ tunnel  (cloudflared, profile)   │
+                                └──→│ app     (TanStack Start + Nitro) │
+                                    │           /api/*  REST           │
+                                    │           /ws     WebSocket      │
+                                    │ db      (Postgres 17, internal)  │
+                                    │ backup  (pg_dump → ./backups)    │
+                                    └──────────────────────────────────┘
+```
+
+## Repository layout
+
+```
+src/            # web client — Feature-Sliced Design
   app/          # providers, global shell wiring
   pages/        # route compositions (login, register, home, future chat)
   widgets/      # composite UI blocks (chat-shell, …)
   features/     # user actions (auth forms, send-message, start-call)
   entities/     # domain models (user, room, message, call)
-  shared/       # ui kit, lib, api client, config
+  shared/       # ui kit, lib
 routes/         # TanStack file routes — thin adapters only
-convex/         # Convex schema & functions (realtime backend)
+server/         # Nitro server (serverDir)
+  api/          # REST handlers → /api/*
+  routes/ws.ts  # realtime WebSocket → /ws
+  db/           # Drizzle schema, client, migrations
+  plugins/      # startup hooks (migrations)
+  utils/        # auth, realtime hub, message posting
 ```
 
-Import rule: higher layers may import lower ones only  
-`app → pages → widgets → features → entities → shared`
+FSD import rule: `app → pages → widgets → features → entities → shared`.
 
-## Auth (current)
+## Server
 
-| Slice | Role |
+| Concern | Implementation |
 | --- | --- |
-| `features/auth` | Login / register forms (ElevenLabs UI style) |
-| `pages/auth` | Page shell + mode switch |
-| `routes/login`, `routes/register` | File routes |
+| Database | Postgres 17 + Drizzle ORM (`server/db/schema.ts`) |
+| Migrations | `npm run db:generate` → applied automatically on server start |
+| Auth | scrypt passwords, opaque session tokens (SHA-256 stored) |
+| Session transport | `converse_session` cookie (web) or `Authorization: Bearer` (Android) |
+| Realtime | Nitro WebSocket + in-memory room hub (single process) |
+| Backups | `backup` service: `pg_dump -Fc` every 24 h, keeps 7 |
 
-## Realtime roadmap (Convex)
+### REST
 
-1. Install: `bun add convex` then `bunx convex dev`
-2. Set `VITE_CONVEX_URL`
-3. Uncomment `convex/schema.ts` tables (`users`, `rooms`, `messages`, `calls`)
-4. Mount `ConvexProvider` in `app/providers`
-5. Add entity/feature API hooks:
-   - `entities/message` → `useRoomMessages`
-   - `features/send-message` → mutation
-   - `features/start-call` → signaling docs + SFU (LiveKit/WebRTC)
+| Method | Path | Body / query |
+| --- | --- | --- |
+| POST | `/api/auth/register` | `{ name, email, password }` → `{ user, token }` |
+| POST | `/api/auth/login` | `{ email, password }` → `{ user, token }` |
+| POST | `/api/auth/logout` | — |
+| GET | `/api/auth/me` | — |
+| GET | `/api/rooms` | — |
+| POST | `/api/rooms` | `{ name, type: "direct" \| "group", memberEmails }` |
+| GET | `/api/rooms/:id/messages` | `?before=<nextCursor>&limit=50` → `{ messages, nextCursor }` (newest first) |
+| POST | `/api/rooms/:id/messages` | `{ body, clientId? }` |
 
-### Responsibility split
+### WebSocket `/ws`
 
-| Concern | Owner |
+Client → server:
+
+```jsonc
+{ "type": "subscribe",   "roomId": "…" }
+{ "type": "unsubscribe", "roomId": "…" }
+{ "type": "send",        "roomId": "…", "body": "Hi", "clientId": "local-uuid" }
+```
+
+Server → client:
+
+```jsonc
+{ "type": "ready", "userId": "…" }
+{ "type": "subscribed", "roomId": "…" }
+{ "type": "message", "message": { "id", "roomId", "authorId", "body", "createdAt" }, "clientId": "…" }
+{ "type": "error", "code": "forbidden", "message": "…", "clientId": "…" }
+```
+
+`clientId` lets the sender match the echo with its optimistic message.
+Types live in `server/utils/hub.ts` (contract shared with the Android app).
+
+## Clients
+
+| Client | Notes |
 | --- | --- |
-| Message fan-out / presence | Convex queries + subscriptions |
-| Call signaling | Convex `calls` table |
-| Media (audio/video) | External SFU — not Convex |
-| Auth session | Convex Auth or external IdP → `entities/user` |
+| Web (`src/`) | For iOS and desktop users. Same origin → cookie auth. |
+| Android | Separate project. Bearer token, reconnects `/ws` on foreground. No push notifications. |
 
-## UI
+## Constraints (by design)
 
-Shared primitives live in `shared/ui` (shadcn base-nova / ElevenLabs registry style).  
-No Tailwind class prefix. Theme tokens in `src/styles.css` (dark-first).
+- Single `app` instance: the realtime hub is in memory. Scaling out → Postgres `LISTEN/NOTIFY`.
+- The server is offline when the host machine is off.
+- Postgres has no published port; only `app` talks to it.
+- Calls (future): signaling over `/ws`, media needs a TURN/SFU (WebRTC does not go through the tunnel).
+
+## Operations
+
+```bash
+cp .env.example .env                    # set DB_PASSWORD (+ TUNNEL_TOKEN)
+docker compose up -d                    # local: http://localhost:3000
+docker compose --profile tunnel up -d   # public via Cloudflare Tunnel
+```
+
+Move to another machine: copy the repo + `.env`, `docker compose up -d`, then restore:
+
+```bash
+docker compose exec -T db pg_restore -U converse -d converse --clean < backups/<file>.dump
+```

@@ -15,12 +15,12 @@ import {
 
 /**
  * Login form — ElevenLabs UI aesthetic (dark surface, tight type, primary CTA).
- * Submit is wired for future Convex Auth / OAuth providers.
+ * Submit will call `POST /api/auth/login` (server/api/auth).
  */
 export function LoginForm() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // Future: Convex Auth / Better Auth sign-in
+    // TODO: POST /api/auth/login
   }
 
   return (

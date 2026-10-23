@@ -1,6 +1,6 @@
 /**
- * Domain types for User — will map to Convex `users` table.
- * Keep transport-agnostic so Convex / auth providers can plug in later.
+ * Domain types for User — Postgres `users` table (server/db/schema.ts).
+ * Keep transport-agnostic: shared by web and Android clients.
  */
 export type UserId = string
 

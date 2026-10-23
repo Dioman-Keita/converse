@@ -2,7 +2,7 @@ import type { UserId } from "@/entities/user"
 import type { RoomId } from "@/entities/room"
 
 /**
- * Domain types for chat messages — future Convex `messages` table.
+ * Domain types for chat messages — Postgres `messages` table (server/db/schema.ts).
  */
 export type MessageId = string
 

@@ -7,8 +7,8 @@
  * - features/send-message composer
  * - features/start-call controls
  *
- * Data will stream from Convex via entity/feature hooks once
- * `VITE_CONVEX_URL` is set and `convex/` functions are generated.
+ * Data will stream from the `/ws` endpoint (server/routes/ws.ts)
+ * via entity/feature hooks; history comes from `/api/rooms/:id/messages`.
  */
 export function ChatShellPlaceholder() {
   return null

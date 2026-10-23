@@ -11,7 +11,13 @@ const config = defineConfig({
   },
   plugins: [
     devtools(),
-    nitro({ rollupConfig: { external: [/^@sentry\//] } }),
+    nitro({
+      // Pin the target so the build never depends on the runtime it happens to run under.
+      preset: "node-server",
+      serverDir: "./server",
+      features: { websocket: true },
+      rollupConfig: { external: [/^@sentry\//] },
+    }),
     tailwindcss(),
     tanstackStart(),
     viteReact(),

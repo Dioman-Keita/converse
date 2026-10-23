@@ -1,7 +1,7 @@
 import type { UserId } from "@/entities/user"
 
 /**
- * Domain types for conversation rooms — future Convex `rooms` table.
+ * Domain types for conversation rooms — Postgres `rooms` table (server/db/schema.ts).
  */
 export type RoomId = string
 
