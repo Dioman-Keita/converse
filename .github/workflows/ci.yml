@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: converse
+          POSTGRES_PASSWORD: converse
+          POSTGRES_DB: converse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U converse -d converse_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # src/routeTree.gen.ts is gitignored; tsc needs it before the build creates it.
+      - name: Generate routes
+        run: npm run generate-routes
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint src server tests
+
+      - name: Build
+        run: npm run build
+
+      - name: Integration tests
+        run: npm run test:e2e
+        env:
+          E2E_DATABASE_URL: postgres://converse:converse@localhost:5432/converse_test

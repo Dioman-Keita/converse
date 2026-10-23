@@ -236,8 +236,29 @@ L'app de dev tourne sur http://localhost:3000 : arrête d'abord le conteneur `ap
 | `npm run generate-routes` | Régénère `src/routeTree.gen.ts` |
 | `npm run db:generate` | Crée une migration après modification de `server/db/schema.ts` |
 | `npm run db:studio` | Explorateur de base Drizzle Studio |
+| `npm run test:e2e` | Tests d'intégration du serveur (REST + WebSocket) contre le build et un vrai Postgres |
 
 Les migrations sont appliquées automatiquement au démarrage du serveur.
+
+### Tests d'intégration
+
+`tests/e2e/` lance le serveur buildé (`node .output/server/index.mjs`) sur le port 3123 et le teste contre une base Postgres **dédiée** : les tests y créent des comptes et des salons, ne les pointe jamais vers la vraie base.
+
+```bash
+docker run -d --name converse-e2e-db -p 127.0.0.1:55432:5432 -e POSTGRES_USER=converse -e POSTGRES_PASSWORD=converse -e POSTGRES_DB=converse_test postgres:17
+```
+
+```bash
+npm run build
+```
+
+```bash
+npm run test:e2e
+```
+
+Variables facultatives : `E2E_DATABASE_URL` (par défaut `postgres://converse:converse@127.0.0.1:55432/converse_test`), `E2E_PORT` (par défaut `3123`) et `E2E_SERVER_LOG=1` pour afficher les logs du serveur. Pense à relancer `npm run build` après une modification de `server/`.
+
+La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque PR et chaque push sur `main` : vérification des types, ESLint, build puis ces tests avec un service `postgres:17`.
 
 ### Organisation du code
 
@@ -250,6 +271,7 @@ server/          # backend Nitro
 src/             # client web — Feature-Sliced Design
   app/ pages/ widgets/ features/ entities/ shared/
   routes/        # routes TanStack (fines, délèguent aux pages)
+tests/e2e/       # tests d'intégration du serveur (Vitest)
 ```
 
 ---
