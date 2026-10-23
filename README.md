@@ -277,6 +277,5 @@ La session a expiré (30 jours) ou tu t'es déconnecté ailleurs : reconnecte-to
 
 - **PC éteint = chat hors ligne.** Pour du 24 h/24, la même stack tourne telle quelle sur un petit VPS ou un Raspberry Pi.
 - **Pas de notifications push** : un message n'est visible qu'avec l'app ouverte (prévu ainsi pour l'app web et la future app Android).
-- **Interface en anglais** pour l'instant.
 - **Pas de mot de passe oublié** ni de connexion Google.
 - **Un seul serveur** : le temps réel est géré en mémoire, adapté à un usage entre amis ou en petite équipe.
