@@ -10,6 +10,8 @@ import { RealtimeClient } from "@/shared/api"
 import { chatReducer, initialChatState } from "./chat-state"
 
 const PENDING_TIMEOUT_MS = 10_000
+const TYPING_REFRESH_MS = 3_000
+const TYPING_IDLE_MS = 4_000
 
 function newClientId(): string {
   // randomUUID only exists in secure contexts (https / localhost); plain-http LAN access falls back.
@@ -76,6 +78,25 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
             currentUserId,
           })
           break
+        case "presence":
+          dispatch({
+            type: "presence",
+            userId: event.userId,
+            online: event.online,
+            lastSeenAt: event.lastSeenAt,
+          })
+          break
+        case "typing":
+          if (event.userId !== currentUserId) {
+            dispatch({
+              type: "typing",
+              roomId: event.roomId,
+              userId: event.userId,
+              typing: event.typing,
+              now: Date.now(),
+            })
+          }
+          break
         case "error":
           if (event.clientId) {
             const roomId = findRoomOfClientMessage(stateRef.current.history, event.clientId)
@@ -108,12 +129,56 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     }
   }, [currentUserId, loadLatest, loadRooms, onSessionExpired])
 
+  // Drop stale "is typing" signals (sender went quiet without a stop event).
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const hasTyping = Object.values(stateRef.current.typing).some(
+        (users) => users && Object.keys(users).length > 0,
+      )
+      if (hasTyping) dispatch({ type: "typingExpired", now: Date.now() })
+    }, 1_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  // Outgoing typing signal: refreshed at most every TYPING_REFRESH_MS while typing,
+  // stopped after TYPING_IDLE_MS without keystrokes, on send, or on room change.
+  const typingSent = useRef<{ roomId: string; at: number } | null>(null)
+  const typingIdle = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const stopTyping = useCallback(() => {
+    clearTimeout(typingIdle.current)
+    const sent = typingSent.current
+    if (!sent) return
+    typingSent.current = null
+    realtime.current?.send({ type: "typing", roomId: sent.roomId, typing: false })
+  }, [])
+
+  const notifyTyping = useCallback(
+    (roomId: string, typing: boolean) => {
+      if (!typing) return stopTyping()
+      const sent = typingSent.current
+      if (sent && sent.roomId !== roomId) stopTyping()
+      const now = Date.now()
+      if (!typingSent.current || now - typingSent.current.at > TYPING_REFRESH_MS) {
+        if (realtime.current?.send({ type: "typing", roomId, typing: true })) {
+          typingSent.current = { roomId, at: now }
+        }
+      }
+      clearTimeout(typingIdle.current)
+      typingIdle.current = setTimeout(stopTyping, TYPING_IDLE_MS)
+    },
+    [stopTyping],
+  )
+
+  useEffect(() => stopTyping, [stopTyping])
+
   const selectRoom = useCallback(
     (roomId: string | undefined) => {
+      stopTyping()
       dispatch({ type: "selected", roomId })
       if (roomId && !stateRef.current.history[roomId]) void loadLatest(roomId)
     },
-    [loadLatest],
+    [loadLatest, stopTyping],
   )
 
   const loadOlder = useCallback(async (roomId: string) => {
@@ -130,6 +195,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
 
   const send = useCallback(
     (roomId: string, body: string) => {
+      stopTyping()
       const clientId = newClientId()
       const pending: ChatMessage = {
         id: `local-${clientId}`,
@@ -154,7 +220,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
       }
       setTimeout(() => dispatch({ type: "messageFailed", roomId, clientId }), PENDING_TIMEOUT_MS)
     },
-    [currentUserId],
+    [currentUserId, stopTyping],
   )
 
   const retry = useCallback(
@@ -171,7 +237,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     realtime.current?.subscribe(room.id)
   }, [])
 
-  return { state, selectRoom, loadOlder, send, retry, addRoom }
+  return { state, selectRoom, loadOlder, send, retry, addRoom, notifyTyping }
 }
 
 function findRoomOfClientMessage(

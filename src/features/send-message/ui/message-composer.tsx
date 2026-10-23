@@ -8,13 +8,20 @@ const MAX_LENGTH = 4000
 
 type MessageComposerProps = {
   onSend: (body: string) => void
+  /** Called on every edit: true while there is text in the box, false once it's emptied. */
+  onTyping?: (typing: boolean) => void
   disabled?: boolean
 }
 
 /** Enter sends, Shift+Enter adds a new line. */
-export function MessageComposer({ onSend, disabled }: MessageComposerProps) {
+export function MessageComposer({ onSend, onTyping, disabled }: MessageComposerProps) {
   const [value, setValue] = useState("")
   const textarea = useRef<HTMLTextAreaElement>(null)
+
+  function handleChange(next: string) {
+    setValue(next)
+    onTyping?.(next.trim().length > 0)
+  }
 
   function submit(event?: FormEvent) {
     event?.preventDefault()
@@ -40,7 +47,7 @@ export function MessageComposer({ onSend, disabled }: MessageComposerProps) {
       <textarea
         ref={textarea}
         value={value}
-        onChange={(e) => setValue(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         onKeyDown={handleKeyDown}
         maxLength={MAX_LENGTH}
         rows={1}

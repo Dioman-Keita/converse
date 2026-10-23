@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
+  // Last time the user had a live connection (set on connect and on disconnect).
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
 })
 
 export const sessions = pgTable(
