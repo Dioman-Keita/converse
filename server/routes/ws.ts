@@ -7,7 +7,7 @@
 import { defineWebSocketHandler } from "nitro/h3"
 
 import { getSessionUser } from "../utils/auth"
-import { joinRoom, leaveAllRooms, leaveRoom } from "../utils/hub"
+import { disconnect, joinRoom, leaveRoom, registerUserSocket } from "../utils/hub"
 import type { ClientEvent, ServerEvent } from "../utils/hub"
 import { MAX_MESSAGE_LENGTH, postMessage } from "../utils/messages"
 import { UUID_RE, isRoomMember } from "../utils/rooms"
@@ -30,6 +30,7 @@ export default defineWebSocketHandler({
 
   open(peer) {
     const { userId } = peer.context as PeerContext
+    registerUserSocket(userId, peer)
     send(peer, { type: "ready", userId })
   },
 
@@ -60,7 +61,7 @@ export default defineWebSocketHandler({
   },
 
   close(peer) {
-    leaveAllRooms(peer)
+    disconnect((peer.context as PeerContext).userId, peer)
   },
 })
 

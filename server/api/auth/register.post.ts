@@ -11,7 +11,7 @@ export default defineHandler(async (event) => {
   const password = requireString(body, "password", { min: 8, max: 200 })
 
   // Rely on the unique constraint (not a pre-check) so concurrent sign-ups can't race.
-  const [user] = await db
+  const inserted = await db
     .insert(schema.users)
     .values({ name, email, passwordHash: await hashPassword(password) })
     .onConflictDoNothing({ target: schema.users.email })
@@ -22,6 +22,7 @@ export default defineHandler(async (event) => {
       imageUrl: schema.users.imageUrl,
       createdAt: schema.users.createdAt,
     })
+  const user = inserted.at(0)
   if (!user) {
     throw new HTTPError({ status: 409, message: "Email already registered" })
   }

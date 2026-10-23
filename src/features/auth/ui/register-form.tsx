@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
 import type { FormEvent } from "react"
 
 import {
@@ -13,14 +14,41 @@ import {
   Label,
 } from "@/shared/ui"
 
+import { register } from "../api/auth"
+import { FormError } from "./form-error"
+
 /**
  * Register form — ElevenLabs UI aesthetic, matched to LoginForm.
- * Submit will call `POST /api/auth/register` (server/api/auth).
+ * Calls `POST /api/auth/register`; the server signs the new user in.
  */
 export function RegisterForm() {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string>()
+  const [pending, setPending] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // TODO: POST /api/auth/register
+    const form = new FormData(event.currentTarget)
+    const credentials = {
+      name: String(form.get("name")),
+      email: String(form.get("email")),
+      password: String(form.get("password")),
+      confirmPassword: String(form.get("confirmPassword")),
+    }
+    if (credentials.password !== credentials.confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+
+    setError(undefined)
+    setPending(true)
+    try {
+      await register(credentials)
+      await navigate({ to: "/chat" })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign up failed")
+      setPending(false)
+    }
   }
 
   return (
@@ -81,11 +109,12 @@ export function RegisterForm() {
               required
             />
           </div>
+          <FormError message={error} />
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
-          <Button type="submit" className="w-full" size="lg">
-            Create account
+          <Button type="submit" className="w-full" size="lg" disabled={pending}>
+            {pending ? "Creating account…" : "Create account"}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
             Already have an account?{" "}

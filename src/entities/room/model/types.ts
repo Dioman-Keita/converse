@@ -1,16 +1,12 @@
-import type { UserId } from "@/entities/user"
+import type { RoomDto, RoomMemberDto } from "@/shared/api"
 
 /**
  * Domain types for conversation rooms — Postgres `rooms` table (server/db/schema.ts).
  */
 export type RoomId = string
 
-export type RoomType = "direct" | "group"
+export type RoomType = RoomDto["type"]
 
-export type Room = {
-  id: RoomId
-  name: string
-  type: RoomType
-  memberIds: UserId[]
-  lastMessageAt?: number
-}
+export type Room = RoomDto
+
+export type RoomMember = RoomMemberDto

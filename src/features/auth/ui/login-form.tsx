@@ -1,4 +1,5 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
 import type { FormEvent } from "react"
 
 import {
@@ -13,14 +14,33 @@ import {
   Label,
 } from "@/shared/ui"
 
+import { login } from "../api/auth"
+import { FormError } from "./form-error"
+
 /**
  * Login form — ElevenLabs UI aesthetic (dark surface, tight type, primary CTA).
- * Submit will call `POST /api/auth/login` (server/api/auth).
+ * Calls `POST /api/auth/login`; the server sets the session cookie.
  */
 export function LoginForm() {
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const navigate = useNavigate()
+  const [error, setError] = useState<string>()
+  const [pending, setPending] = useState(false)
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    // TODO: POST /api/auth/login
+    const form = new FormData(event.currentTarget)
+    setError(undefined)
+    setPending(true)
+    try {
+      await login({
+        email: String(form.get("email")),
+        password: String(form.get("password")),
+      })
+      await navigate({ to: "/chat" })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Sign in failed")
+      setPending(false)
+    }
   }
 
   return (
@@ -47,15 +67,7 @@ export function LoginForm() {
           </div>
 
           <div className="grid gap-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="login-password">Password</Label>
-              <a
-                href="#"
-                className="ml-auto text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-              >
-                Forgot password?
-              </a>
-            </div>
+            <Label htmlFor="login-password">Password</Label>
             <Input
               id="login-password"
               name="password"
@@ -64,14 +76,13 @@ export function LoginForm() {
               required
             />
           </div>
+
+          <FormError message={error} />
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
-          <Button type="submit" className="w-full" size="lg">
-            Sign in
-          </Button>
-          <Button type="button" variant="outline" className="w-full" size="lg">
-            Continue with Google
+          <Button type="submit" className="w-full" size="lg" disabled={pending}>
+            {pending ? "Signing in…" : "Sign in"}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
