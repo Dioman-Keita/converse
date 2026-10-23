@@ -27,7 +27,7 @@ type ChatShellProps = {
  * On mobile only one pane is visible at a time.
  */
 export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) {
-  const { state, selectRoom, loadOlder, send, retry, addRoom, notifyTyping } = useChat(
+  const { state, selectRoom, loadOlder, send, sendVoice, retry, addRoom, notifyTyping } = useChat(
     user.id,
     onSessionExpired,
   )
@@ -162,6 +162,7 @@ export function ChatShell({ user, onLogout, onSessionExpired }: ChatShellProps) 
             <MessageComposer
               key={activeRoom.id}
               onSend={(body) => send(activeRoom.id, body)}
+              onSendVoice={(recording) => sendVoice(activeRoom.id, recording)}
               onTyping={(typing) => notifyTyping(activeRoom.id, typing)}
             />
           </>

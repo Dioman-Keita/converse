@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef } from "react"
 
-import { fetchMessages, postMessage } from "@/entities/message"
+import { fetchMessages, postMessage, postVoice } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import { fetchRooms } from "@/entities/room"
 import type { Room } from "@/entities/room"
 import { fetchCurrentUser } from "@/entities/user"
 import { RealtimeClient } from "@/shared/api"
+import type { Recording } from "@/shared/lib/use-voice-recorder"
 
 import { chatReducer, initialChatState } from "./chat-state"
 
@@ -53,6 +54,8 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     const client = new RealtimeClient()
     realtime.current = client
     let connectedBefore = false
+    // Rooms whose subscription failed: messages may have been missed until it's retried.
+    const missedRooms = new Set<string>()
 
     const offEvent = client.onEvent((event) => {
       switch (event.type) {
@@ -97,10 +100,19 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
             })
           }
           break
+        case "subscribed":
+          if (missedRooms.delete(event.roomId)) {
+            if (stateRef.current.history[event.roomId]?.status === "ready") {
+              void loadLatest(event.roomId)
+            }
+          }
+          break
         case "error":
           if (event.clientId) {
             const roomId = findRoomOfClientMessage(stateRef.current.history, event.clientId)
             if (roomId) dispatch({ type: "messageFailed", roomId, clientId: event.clientId })
+          } else if (event.code === "internal" && event.roomId) {
+            missedRooms.add(event.roomId)
           }
           break
       }
@@ -202,6 +214,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
         clientId,
         roomId,
         authorId: currentUserId,
+        kind: "text",
         body,
         createdAt: new Date().toISOString(),
         status: "pending",
@@ -223,13 +236,55 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     [currentUserId, stopTyping],
   )
 
+  // Recordings kept until their upload succeeds, so a failed one can be retried.
+  const pendingVoice = useRef(new Map<string, Recording>())
+
+  const sendVoice = useCallback(
+    (roomId: string, recording: Recording) => {
+      const clientId = newClientId()
+      pendingVoice.current.set(clientId, recording)
+      // Playable right away for the sender, from memory, while it uploads.
+      const localUrl = URL.createObjectURL(recording.blob)
+      dispatch({
+        type: "messagePending",
+        message: {
+          id: `local-${clientId}`,
+          clientId,
+          roomId,
+          authorId: currentUserId,
+          kind: "voice",
+          body: "",
+          voice: { url: localUrl, durationMs: recording.durationMs },
+          createdAt: new Date().toISOString(),
+          status: "pending",
+        },
+      })
+
+      postVoice(roomId, recording.blob, clientId)
+        .then((message) => {
+          pendingVoice.current.delete(clientId)
+          dispatch({ type: "messageReceived", message, clientId, currentUserId })
+          URL.revokeObjectURL(localUrl)
+        })
+        .catch(() => dispatch({ type: "messageFailed", roomId, clientId }))
+    },
+    [currentUserId],
+  )
+
   const retry = useCallback(
     (message: ChatMessage) => {
       if (!message.clientId) return
+      const recording = pendingVoice.current.get(message.clientId)
+      if (message.kind === "voice" && !recording) return
       dispatch({ type: "messageDiscarded", roomId: message.roomId, clientId: message.clientId })
-      send(message.roomId, message.body)
+      if (recording) {
+        pendingVoice.current.delete(message.clientId)
+        sendVoice(message.roomId, recording)
+      } else {
+        send(message.roomId, message.body)
+      }
     },
-    [send],
+    [send, sendVoice],
   )
 
   const addRoom = useCallback((room: Room) => {
@@ -237,7 +292,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     realtime.current?.subscribe(room.id)
   }, [])
 
-  return { state, selectRoom, loadOlder, send, retry, addRoom, notifyTyping }
+  return { state, selectRoom, loadOlder, send, sendVoice, retry, addRoom, notifyTyping }
 }
 
 function findRoomOfClientMessage(

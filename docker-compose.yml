@@ -4,7 +4,8 @@
 #   docker compose --profile quick-tunnel up -d    # + temporary public URL (no account)
 #   docker compose --profile tunnel up -d          # + stable public URL (your domain)
 #
-# All state lives in ./data (Postgres) and ./backups (daily dumps).
+# State: ./data/postgres (database), the `uploads` volume (voice notes),
+# ./backups (daily database dumps + uploads archives).
 
 services:
   db:
@@ -31,6 +32,9 @@ services:
       PORT: 3000
     ports:
       - "127.0.0.1:3000:3000"
+    volumes:
+      # Named volume (not a bind mount) so it stays writable by the `node` user on any host.
+      - uploads:/app/data/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -44,6 +48,7 @@ services:
       BACKUP_INTERVAL: ${BACKUP_INTERVAL:-86400}
     volumes:
       - ./backups:/backups
+      - uploads:/uploads:ro
     depends_on:
       db:
         condition: service_healthy
@@ -54,6 +59,9 @@ services:
           f=/backups/converse-$$(date +%Y%m%d-%H%M%S).dump
           pg_dump -h db -U converse -Fc converse > "$$f" && echo "backup: $$f"
           ls -1t /backups/converse-*.dump | tail -n +$$((BACKUP_KEEP + 1)) | xargs -r rm --
+          u=/backups/converse-uploads-$$(date +%Y%m%d-%H%M%S).tar.gz
+          tar -czf "$$u" -C /uploads . && echo "backup: $$u"
+          ls -1t /backups/converse-uploads-*.tar.gz | tail -n +$$((BACKUP_KEEP + 1)) | xargs -r rm --
           sleep "$$BACKUP_INTERVAL"
         done
 
@@ -78,3 +86,6 @@ services:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
     depends_on:
       - app
+
+volumes:
+  uploads:
