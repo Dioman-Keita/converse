@@ -36,6 +36,7 @@ export type ChatAction =
   | { type: "messageReceived"; message: Message; clientId?: string; currentUserId: string }
   | { type: "messageFailed"; roomId: string; clientId: string }
   | { type: "messageDiscarded"; roomId: string; clientId: string }
+  | { type: "uploadProgress"; roomId: string; clientId: string; progress: number }
   | { type: "connection"; status: RealtimeStatus }
   | { type: "presence"; userId: string; online: boolean; lastSeenAt: string | null }
   | { type: "typing"; roomId: string; userId: string; typing: boolean; now: number }
@@ -69,10 +70,20 @@ const byTime = (a: ChatMessage, b: ChatMessage) =>
   a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id)
 
 /** Merge server messages into a list, deduped by id, keeping local pending/failed ones. */
+/**
+ * Merge server messages into a list, deduped by id, keeping local pending/failed ones.
+ * A message the list already has is replaced: the server may send it again with
+ * new content (e.g. a video that finished converting).
+ */
 function merge(existing: ChatMessage[], incoming: Message[]): ChatMessage[] {
-  const ids = new Set(existing.map((m) => m.id))
-  const added = incoming.filter((m) => !ids.has(m.id)).map(sent)
-  return [...existing, ...added].sort(byTime)
+  const updates = new Map(incoming.map((m) => [m.id, m]))
+  const kept = existing.map((m) => {
+    const update = updates.get(m.id)
+    if (!update) return m
+    updates.delete(m.id)
+    return { ...sent(update), clientId: m.clientId }
+  })
+  return [...kept, ...[...updates.values()].map(sent)].sort(byTime)
 }
 
 function updateHistory(
@@ -176,7 +187,9 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
 
       const fromSomeoneElse = message.authorId !== action.currentUserId
       const alreadyKnown = state.history[message.roomId]?.items.some((m) => m.id === message.id)
-      if (fromSomeoneElse && !alreadyKnown && message.roomId !== state.activeRoomId) {
+      // A video is first sent as `processing`; its ready/failed version is an update.
+      const isUpdate = message.kind === "video" && message.video?.status !== "processing"
+      if (fromSomeoneElse && !alreadyKnown && !isUpdate && message.roomId !== state.activeRoomId) {
         next = {
           ...next,
           unread: { ...next.unread, [message.roomId]: (next.unread[message.roomId] ?? 0) + 1 },
@@ -191,6 +204,16 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         items: h.items.map((m) =>
           m.clientId === action.clientId && m.status === "pending"
             ? { ...m, status: "failed" }
+            : m,
+        ),
+      }))
+
+    case "uploadProgress":
+      return updateHistory(state, action.roomId, (h) => ({
+        ...h,
+        items: h.items.map((m) =>
+          m.clientId === action.clientId && m.upload
+            ? { ...m, upload: { ...m.upload, progress: action.progress } }
             : m,
         ),
       }))

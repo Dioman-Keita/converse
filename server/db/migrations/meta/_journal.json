@@ -36,6 +36,13 @@
       "when": 1793009952840,
       "tag": "0004_harsh_stature",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793011099789,
+      "tag": "0005_strong_revanche",
+      "breakpoints": true
     }
   ]
 }

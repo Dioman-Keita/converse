@@ -84,13 +84,32 @@ export type MessageDto = {
   id: string
   roomId: string
   authorId: string
-  kind: "text" | "voice"
-  /** Empty for voice messages. */
+  kind: "text" | "voice" | "image" | "video"
+  /** Empty for media messages. */
   body: string
   /** Voice messages only: AAC/M4A audio, readable by room members. */
   voice?: { url: string; durationMs: number }
+  /** Image messages only: WebP, metadata stripped, at most 2048 px. */
+  image?: { url: string; width: number; height: number }
+  /**
+   * Video messages only. Converted in the background: `processing` first, then the
+   * same message is sent again as `ready` (H.264 MP4 + poster) or `failed`.
+   */
+  video?: VideoDto
   createdAt: string
 }
+
+export type VideoDto =
+  | { status: "processing" }
+  | { status: "failed" }
+  | {
+      status: "ready"
+      url: string
+      posterUrl: string
+      width: number
+      height: number
+      durationMs: number
+    }
 
 export type RoomMemberDto = {
   id: string

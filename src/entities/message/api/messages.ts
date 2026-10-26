@@ -1,4 +1,4 @@
-import { api } from "@/shared/api"
+import { api, uploadFile } from "@/shared/api"
 
 import type { Message } from "../model/types"
 
@@ -18,6 +18,21 @@ export async function postMessage(
   const { message } = await api<{ message: Message }>(
     `/api/rooms/${roomId}/messages`,
     { json: { body, clientId } },
+  )
+  return message
+}
+
+/** Uploads a photo or video (raw file body), reporting upload progress (0–1). */
+export async function uploadMedia(
+  roomId: string,
+  file: File,
+  clientId: string,
+  onProgress: (fraction: number) => void,
+): Promise<Message> {
+  const { message } = await uploadFile<{ message: Message }>(
+    `/api/rooms/${roomId}/media?clientId=${encodeURIComponent(clientId)}`,
+    file,
+    onProgress,
   )
   return message
 }

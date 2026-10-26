@@ -15,6 +15,10 @@ export default definePlugin(async () => {
       migrationsFolder: resolve(process.cwd(), "server/db/migrations"),
     })
     console.info("[converse] database migrations applied")
+    // A restart interrupts video conversions; they can't resume, so report them failed.
+    const { failInterruptedVideos } = await import("../utils/videos")
+    const interrupted = await failInterruptedVideos()
+    if (interrupted) console.warn(`[converse] ${interrupted} interrupted video conversion(s) marked failed`)
   } catch (error) {
     // Serving without a usable database is pointless: exit so Docker restarts us.
     console.error("[converse] database migrations failed", error)

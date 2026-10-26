@@ -9,6 +9,7 @@ export type {
   RoomDto,
   RoomMemberDto,
   ServerEvent,
+  VideoDto,
 } from "../../../server/utils/hub"
 
 export type UserDto = {

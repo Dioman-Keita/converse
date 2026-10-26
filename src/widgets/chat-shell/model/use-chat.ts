@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react"
 
-import { fetchMessages, postMessage, postVoice } from "@/entities/message"
+import { fetchMessages, postMessage, postVoice, uploadMedia } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import { fetchRooms } from "@/entities/room"
 import type { Room } from "@/entities/room"
@@ -271,20 +271,63 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     [currentUserId],
   )
 
+  // Photos/videos kept until their upload succeeds, so a failed one can be retried.
+  const pendingMedia = useRef(new Map<string, File>())
+
+  const sendMedia = useCallback(
+    (roomId: string, file: File) => {
+      const kind = file.type.startsWith("video/") ? "video" : "image"
+      const clientId = newClientId()
+      pendingMedia.current.set(clientId, file)
+      // Shown right away from memory while it uploads (and, for videos, converts).
+      const localUrl = URL.createObjectURL(file)
+      dispatch({
+        type: "messagePending",
+        message: {
+          id: `local-${clientId}`,
+          clientId,
+          roomId,
+          authorId: currentUserId,
+          kind,
+          body: "",
+          createdAt: new Date().toISOString(),
+          status: "pending",
+          upload: { progress: 0, localUrl },
+        },
+      })
+
+      uploadMedia(roomId, file, clientId, (progress) =>
+        dispatch({ type: "uploadProgress", roomId, clientId, progress }),
+      )
+        .then((message) => {
+          pendingMedia.current.delete(clientId)
+          dispatch({ type: "messageReceived", message, clientId, currentUserId })
+          URL.revokeObjectURL(localUrl)
+        })
+        .catch(() => dispatch({ type: "messageFailed", roomId, clientId }))
+    },
+    [currentUserId],
+  )
+
   const retry = useCallback(
     (message: ChatMessage) => {
       if (!message.clientId) return
       const recording = pendingVoice.current.get(message.clientId)
-      if (message.kind === "voice" && !recording) return
+      const file = pendingMedia.current.get(message.clientId)
+      if (message.kind !== "text" && !recording && !file) return
       dispatch({ type: "messageDiscarded", roomId: message.roomId, clientId: message.clientId })
+      if (message.upload) URL.revokeObjectURL(message.upload.localUrl)
       if (recording) {
         pendingVoice.current.delete(message.clientId)
         sendVoice(message.roomId, recording)
+      } else if (file) {
+        pendingMedia.current.delete(message.clientId)
+        sendMedia(message.roomId, file)
       } else {
         send(message.roomId, message.body)
       }
     },
-    [send, sendVoice],
+    [send, sendVoice, sendMedia],
   )
 
   const addRoom = useCallback((room: Room) => {
@@ -292,7 +335,7 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     realtime.current?.subscribe(room.id)
   }, [])
 
-  return { state, selectRoom, loadOlder, send, sendVoice, retry, addRoom, notifyTyping }
+  return { state, selectRoom, loadOlder, send, sendVoice, sendMedia, retry, addRoom, notifyTyping }
 }
 
 function findRoomOfClientMessage(
