@@ -45,6 +45,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | Database | Postgres 17 + Drizzle ORM (`server/db/schema.ts`) |
 | Migrations | `npm run db:generate` → applied automatically on server start |
 | Auth | scrypt passwords, opaque session tokens (SHA-256 stored) |
+| Languages | UI in English (default) or French: `src/shared/i18n` dictionaries (French typed against English); account setting `users.locale`; server messages localized from `Accept-Language` (`server/utils/i18n.ts`) |
 | Session transport | `converse_session` cookie (web) or `Authorization: Bearer` (Android) |
 | Realtime | Nitro WebSocket + in-memory room hub (single process) |
 | Voice notes | Browser MediaRecorder → raw upload → ffmpeg to mono AAC/M4A (`server/utils/voice.ts`) → `uploads` volume |
@@ -54,16 +55,19 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 
 | Method | Path | Body / query |
 | --- | --- | --- |
-| POST | `/api/auth/register` | `{ name, email, password }` → `{ user, token }` |
+| POST | `/api/auth/register` | `{ name, email, password, locale? }` → `{ user, token }` |
 | POST | `/api/auth/login` | `{ email, password }` → `{ user, token }` |
 | POST | `/api/auth/logout` | — |
-| GET | `/api/auth/me` | — |
+| GET | `/api/auth/me` | — → `{ user }` (includes `locale`) |
+| PATCH | `/api/auth/me` | `{ name?, locale?: "en" \| "fr" }` → `{ user }`; only the fields sent change |
 | GET | `/api/rooms` | — |
 | POST | `/api/rooms` | `{ type: "direct" \| "group", memberEmails, name? }` → `{ room, created }` (direct reuses an existing room; group needs `name`) |
 | GET | `/api/rooms/:id/messages` | `?before=<nextCursor>&limit=50` → `{ messages, nextCursor }` (newest first) |
 | POST | `/api/rooms/:id/messages` | `{ body, clientId? }` |
 | POST | `/api/rooms/:id/voice` | raw audio body (`audio/*`, ≤ 10 MB, 0.3 s–5 min), `?clientId=` → `{ message }` |
 | GET | `/api/media/:messageId` | voice audio (`audio/mp4`), room members only, supports `Range` (needed by iOS Safari) |
+
+User-facing error messages (`message` of 4xx responses) come in the language of the request's `Accept-Language` (English or French, English otherwise). Clients should rely on HTTP status codes and WebSocket `code`s, never on message text.
 
 ### WebSocket `/ws`
 
