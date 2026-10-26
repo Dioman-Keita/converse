@@ -1,6 +1,8 @@
 {
   "name": "converse",
   "private": true,
+  "license": "MIT",
+  "author": "Dioman Keïta",
   "type": "module",
   "imports": {
     "#/*": "./src/*"
