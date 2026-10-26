@@ -9,6 +9,7 @@ import {
   requireString,
   requireUser,
 } from "../../utils/http"
+import { localizedError } from "../../utils/i18n"
 import { findDirectRoom, listRooms } from "../../utils/rooms"
 
 /**
@@ -27,7 +28,7 @@ export default defineHandler(async (event) => {
   if (type !== "direct" && type !== "group") {
     throw badRequest(`"type" must be "direct" or "group"`)
   }
-  const name = type === "group" ? requireString(body, "name", { max: 80 }) : ""
+  const name = type === "group" ? requireString(event, body, "name", { max: 80 }) : ""
 
   const rawEmails = body.memberEmails
   if (
@@ -48,16 +49,14 @@ export default defineHandler(async (event) => {
 
   const missing = emails.filter((e) => !members.some((m) => m.email === e))
   if (missing.length) {
-    throw badRequest(
-      missing.length === 1
-        ? `Aucun compte avec l’email ${missing[0]}`
-        : `Aucun compte avec ces emails : ${missing.join(", ")}`,
-    )
+    throw missing.length === 1
+      ? localizedError(event, 400, "unknownUser", { email: missing[0] })
+      : localizedError(event, 400, "unknownUsers", { emails: missing.join(", ") })
   }
 
   const memberIds = [...new Set([user.id, ...members.map((m) => m.id)])]
   if (type === "direct" && memberIds.length !== 2) {
-    throw badRequest("Une conversation privée se fait avec une seule autre personne")
+    throw localizedError(event, 400, "directNeedsOne")
   }
 
   if (type === "direct") {

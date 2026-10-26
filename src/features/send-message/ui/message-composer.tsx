@@ -5,6 +5,7 @@ import type { FormEvent, KeyboardEvent } from "react"
 import { formatDuration } from "@/entities/message"
 import { canRecordVoice, useVoiceRecorder } from "@/shared/lib/use-voice-recorder"
 import type { Recording } from "@/shared/lib/use-voice-recorder"
+import { useI18n } from "@/shared/i18n"
 import { Button } from "@/shared/ui"
 
 const MAX_LENGTH = 4000
@@ -26,6 +27,7 @@ type MessageComposerProps = {
  * With an empty box the send button becomes a microphone: tap to record, then send or discard.
  */
 export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: MessageComposerProps) {
+  const { t } = useI18n()
   const [value, setValue] = useState("")
   const textarea = useRef<HTMLTextAreaElement>(null)
   const [voiceSupported] = useState(canRecordVoice)
@@ -64,7 +66,7 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
           type="button"
           variant="ghost"
           size="icon"
-          aria-label="Annuler l’enregistrement"
+          aria-label={t("composer.cancelRecording")}
           onClick={recorder.cancel}
         >
           <Trash2 />
@@ -72,7 +74,7 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
         <div className="flex min-h-9 flex-1 items-center gap-2 rounded-lg border border-input px-3 text-sm dark:bg-input/30">
           <span className="size-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />
           {state.status === "starting" ? (
-            <span className="text-muted-foreground">Accès au micro…</span>
+            <span className="text-muted-foreground">{t("composer.micStarting")}</span>
           ) : (
             <RecordingTimer startedAt={state.startedAt} />
           )}
@@ -80,7 +82,7 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
         <Button
           type="button"
           size="icon"
-          aria-label="Envoyer le message vocal"
+          aria-label={t("composer.sendVoice")}
           disabled={state.status !== "recording"}
           onClick={() => void recorder.stop().then(sendRecording)}
         >
@@ -99,9 +101,9 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
     >
       {state.status === "error" && (
         <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
-          {state.message}
+          {t(state.message)}
           <button type="button" className="underline" onClick={recorder.dismissError}>
-            OK
+            {t("common.ok")}
           </button>
         </p>
       )}
@@ -113,8 +115,8 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
           onKeyDown={handleKeyDown}
           maxLength={MAX_LENGTH}
           rows={1}
-          placeholder="Écrire un message…"
-          aria-label="Message"
+          placeholder={t("composer.placeholder")}
+          aria-label={t("composer.messageLabel")}
           className="field-sizing-content max-h-40 min-h-9 flex-1 resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
         />
         {showMic ? (
@@ -122,14 +124,14 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
             type="button"
             size="icon"
             variant="secondary"
-            aria-label="Enregistrer un message vocal"
+            aria-label={t("composer.record")}
             disabled={disabled}
             onClick={() => void recorder.start()}
           >
             <Mic />
           </Button>
         ) : (
-          <Button type="submit" size="icon" disabled={disabled || !value.trim()} aria-label="Envoyer">
+          <Button type="submit" size="icon" disabled={disabled || !value.trim()} aria-label={t("composer.send")}>
             <SendHorizontal />
           </Button>
         )}

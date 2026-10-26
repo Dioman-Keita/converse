@@ -13,6 +13,7 @@ import {
   Input,
   Label,
 } from "@/shared/ui"
+import { useI18n } from "@/shared/i18n"
 
 import { register } from "../api/auth"
 import { FormError } from "./form-error"
@@ -22,6 +23,7 @@ import { FormError } from "./form-error"
  * Calls `POST /api/auth/register`; the server signs the new user in.
  */
 export function RegisterForm() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
@@ -36,7 +38,7 @@ export function RegisterForm() {
       confirmPassword: String(form.get("confirmPassword")),
     }
     if (credentials.password !== credentials.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas")
+      setError(t("register.passwordMismatch"))
       return
     }
 
@@ -46,7 +48,7 @@ export function RegisterForm() {
       await register(credentials)
       await navigate({ to: "/chat" })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Échec de l'inscription")
+      setError(err instanceof Error ? err.message : t("register.failed"))
       setPending(false)
     }
   }
@@ -54,40 +56,40 @@ export function RegisterForm() {
   return (
     <Card className="w-full max-w-sm border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl tracking-tight">Créer votre compte</CardTitle>
+        <CardTitle className="text-xl tracking-tight">{t("register.title")}</CardTitle>
         <CardDescription>
-          Commencez à discuter en temps réel
+          {t("register.subtitle")}
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-2">
-            <Label htmlFor="register-name">Nom</Label>
+            <Label htmlFor="register-name">{t("field.name")}</Label>
             <Input
               id="register-name"
               name="name"
               type="text"
-              placeholder="Awa Traoré"
+              placeholder={t("register.namePlaceholder")}
               autoComplete="name"
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="register-email">Email</Label>
+            <Label htmlFor="register-email">{t("field.email")}</Label>
             <Input
               id="register-email"
               name="email"
               type="email"
-              placeholder="vous@exemple.com"
+              placeholder={t("field.emailPlaceholder")}
               autoComplete="email"
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="register-password">Mot de passe</Label>
+            <Label htmlFor="register-password">{t("field.password")}</Label>
             <Input
               id="register-password"
               name="password"
@@ -99,7 +101,7 @@ export function RegisterForm() {
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="register-confirm-password">Confirmer le mot de passe</Label>
+            <Label htmlFor="register-confirm-password">{t("register.confirmPassword")}</Label>
             <Input
               id="register-confirm-password"
               name="confirmPassword"
@@ -114,15 +116,15 @@ export function RegisterForm() {
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
-            {pending ? "Création…" : "Créer mon compte"}
+            {pending ? t("auth.creatingAccount") : t("auth.createAccount")}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
-            Déjà un compte ?{" "}
+            {t("register.haveAccount")}{" "}
             <Link
               to="/login"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Se connecter
+              {t("auth.signIn")}
             </Link>
           </p>
         </CardFooter>

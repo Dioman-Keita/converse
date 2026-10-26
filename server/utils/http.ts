@@ -8,10 +8,12 @@ import {
   readSessionToken,
 } from "./auth"
 import type { SessionUser } from "./auth"
+import { localizedError, requestLocale, translate } from "./i18n"
+import type { MessageKey } from "./i18n"
 
 export async function requireUser(event: H3Event): Promise<SessionUser> {
   const user = await getSessionUser(event.req.headers)
-  if (!user) throw new HTTPError({ status: 401, message: "Non connecté" })
+  if (!user) throw localizedError(event, 401, "notAuthenticated")
   return user
 }
 
@@ -47,15 +49,16 @@ export async function readJsonObject(
   return body as Record<string, unknown>
 }
 
-// User-facing names of request fields, for validation messages shown in the app.
-const FIELD_LABELS: Record<string, string> = {
-  name: "Le nom",
-  email: "L’email",
-  password: "Le mot de passe",
-  body: "Le message",
+// Request fields whose validation errors are shown in the app (translated label).
+const FIELD_LABELS: Record<string, MessageKey | undefined> = {
+  name: "field.name",
+  email: "field.email",
+  password: "field.password",
+  body: "field.body",
 }
 
 export function requireString(
+  event: H3Event,
   body: Record<string, unknown>,
   key: string,
   { min = 1, max = 10_000 }: { min?: number; max?: number } = {},
@@ -64,8 +67,13 @@ export function requireString(
   if (typeof value !== "string") throw badRequest(`"${key}" must be a string`)
   const trimmed = key === "password" ? value : value.trim()
   if (trimmed.length < min || trimmed.length > max) {
-    const label = FIELD_LABELS[key] ?? `"${key}"`
-    throw badRequest(`${label} doit contenir entre ${min} et ${max} caractères`)
+    const label = FIELD_LABELS[key]
+    if (!label) throw badRequest(`"${key}" must be ${min}-${max} characters`)
+    const locale = requestLocale(event)
+    throw new HTTPError({
+      status: 400,
+      message: translate(locale, "fieldLength", { field: translate(locale, label), min, max }),
+    })
   }
   return trimmed
 }

@@ -1,6 +1,7 @@
 import { Pause, Play } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 
+import { useI18n } from "@/shared/i18n"
 import { cn } from "@/shared/lib/utils"
 
 // Only one voice note plays at a time across the page.
@@ -19,6 +20,7 @@ type VoicePlayerProps = {
 }
 
 export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
+  const { t } = useI18n()
   const audio = useRef<HTMLAudioElement>(null)
   const [isPlaying, setPlaying] = useState(false)
   const [position, setPosition] = useState(0)
@@ -71,7 +73,7 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
       <button
         type="button"
         onClick={toggle}
-        aria-label={isPlaying ? "Mettre en pause" : "Écouter le message vocal"}
+        aria-label={isPlaying ? t("voice.pause") : t("voice.play")}
         className={cn(
           "relative flex size-8 shrink-0 items-center justify-center rounded-full",
           "transition-[background-color,transform] duration-150 active:scale-90 motion-reduce:transition-none",
@@ -110,7 +112,7 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div
           role="slider"
-          aria-label="Position de lecture"
+          aria-label={t("voice.position")}
           aria-valuemin={0}
           aria-valuemax={Math.round(durationMs / 1000)}
           aria-valuenow={Math.round(position / 1000)}

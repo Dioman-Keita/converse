@@ -4,7 +4,8 @@
 
 - Accounts (email + password), direct and group conversations, realtime text and **voice** messages, history.
 - Online status, "last seen…" and "is typing…".
-- Web interface that works on phones and desktops.
+- Web interface that works on phones and desktops, in **English** (default) or **French**.
+- Profile settings: display name and interface language, saved on your account.
 - One command to run everything: `docker compose up -d`.
 - All data stays with you (Postgres) with automatic daily backups.
 - Public access **without touching your router**, through an outbound Cloudflare Tunnel.
@@ -152,6 +153,7 @@ ngrok offers a free static domain, but on the free plan **every visitor first se
 3. Messages arrive in realtime. `Enter` sends, `Shift + Enter` adds a new line.
 4. **Voice message**: with the text box empty, tap the **microphone** 🎤, speak, then **Send** (or the trash icon to discard). 5 minutes max; the browser asks for microphone access the first time.
 5. A badge shows unread messages; the dot under your name shows the connection state. In a conversation, the header shows whether the other person is online or when they were last seen, and when they're typing.
+6. **Settings** (gear icon, or tap your name, top left): change your display name and the interface language (**English** / **Français**). The language is saved on your account, so it follows you on every device; before signing in, the sign-in pages use the last language chosen on that device.
 
 Good to know:
 - people must **sign up first** before you can start a conversation with them;

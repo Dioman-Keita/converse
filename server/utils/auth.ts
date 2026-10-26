@@ -84,6 +84,7 @@ export async function getSessionUser(headers: Headers) {
       email: schema.users.email,
       imageUrl: schema.users.imageUrl,
       createdAt: schema.users.createdAt,
+      locale: schema.users.locale,
     })
     .from(schema.sessions)
     .innerJoin(schema.users, eq(schema.users.id, schema.sessions.userId))

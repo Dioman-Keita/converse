@@ -1,19 +1,22 @@
-import { HTTPError, defineHandler } from "nitro/h3"
+import { defineHandler } from "nitro/h3"
 
 import { db, schema } from "../../db/client"
 import { createSession, hashPassword } from "../../utils/auth"
 import { readJsonObject, requireString, setSessionCookie } from "../../utils/http"
+import { isLocale, localizedError } from "../../utils/i18n"
 
 export default defineHandler(async (event) => {
   const body = await readJsonObject(event)
-  const name = requireString(body, "name", { max: 80 })
-  const email = requireString(body, "email", { max: 254 }).toLowerCase()
-  const password = requireString(body, "password", { min: 8, max: 200 })
+  const name = requireString(event, body, "name", { max: 80 })
+  const email = requireString(event, body, "email", { max: 254 }).toLowerCase()
+  const password = requireString(event, body, "password", { min: 8, max: 200 })
+  // The language the person signed up in (the app's current one); English otherwise.
+  const locale = isLocale(body.locale) ? body.locale : "en"
 
   // Rely on the unique constraint (not a pre-check) so concurrent sign-ups can't race.
   const inserted = await db
     .insert(schema.users)
-    .values({ name, email, passwordHash: await hashPassword(password) })
+    .values({ name, email, passwordHash: await hashPassword(password), locale })
     .onConflictDoNothing({ target: schema.users.email })
     .returning({
       id: schema.users.id,
@@ -21,10 +24,11 @@ export default defineHandler(async (event) => {
       email: schema.users.email,
       imageUrl: schema.users.imageUrl,
       createdAt: schema.users.createdAt,
+      locale: schema.users.locale,
     })
   const user = inserted.at(0)
   if (!user) {
-    throw new HTTPError({ status: 409, message: "Un compte existe déjà avec cet email" })
+    throw localizedError(event, 409, "emailTaken")
   }
 
   const token = await createSession(user.id)

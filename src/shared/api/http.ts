@@ -1,3 +1,5 @@
+import { currentLocale, translate } from "@/shared/i18n"
+
 /** Error thrown for non-2xx API responses, carrying the server's message. */
 export class ApiError extends Error {
   readonly status: number
@@ -10,23 +12,29 @@ export class ApiError extends Error {
 }
 
 type ApiOptions = {
-  method?: "GET" | "POST"
+  method?: "GET" | "POST" | "PATCH"
   json?: unknown
   /** Raw binary body (e.g. a recorded voice note), sent with its own content type. */
   blob?: Blob
 }
 
-/** Same-origin JSON API request; the session cookie is sent automatically. */
+/**
+ * Same-origin JSON API request; the session cookie is sent automatically, and
+ * the interface language so the server answers errors in it.
+ */
 export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { json, blob } = options
   const hasBody = json !== undefined || blob !== undefined
   const res = await fetch(path, {
     method: options.method ?? (hasBody ? "POST" : "GET"),
-    headers: blob
-      ? { "content-type": blob.type || "application/octet-stream" }
-      : json !== undefined
-        ? { "content-type": "application/json" }
-        : undefined,
+    headers: {
+      "accept-language": currentLocale(),
+      ...(blob
+        ? { "content-type": blob.type || "application/octet-stream" }
+        : json !== undefined
+          ? { "content-type": "application/json" }
+          : {}),
+    },
     body: blob ?? (json !== undefined ? JSON.stringify(json) : undefined),
     credentials: "same-origin",
   })
@@ -36,7 +44,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     const message =
       data && typeof data === "object" && "message" in data && typeof data.message === "string"
         ? data.message
-        : `La requête a échoué (${res.status})`
+        : translate(currentLocale(), "http.failed", { status: res.status })
     throw new ApiError(res.status, message)
   }
   return data as T
