@@ -14,6 +14,7 @@ export type NewMessage =
   | { kind: "image"; mediaPath: string; mediaWidth: number; mediaHeight: number }
   /** Stored right away; the converted file is attached later (see utils/videos.ts). */
   | { kind: "video"; mediaDurationMs: number }
+  | { kind: "file"; mediaPath: string; mediaName: string; mediaSize: number; mediaMime: string }
 
 function rowValues(roomId: string, authorId: string, content: NewMessage) {
   const base = { roomId, authorId, kind: content.kind, body: "" }
@@ -32,6 +33,15 @@ function rowValues(roomId: string, authorId: string, content: NewMessage) {
       }
     case "video":
       return { ...base, mediaDurationMs: content.mediaDurationMs, mediaStatus: "processing" as const }
+    case "file":
+      return {
+        ...base,
+        mediaPath: content.mediaPath,
+        mediaName: content.mediaName,
+        mediaSize: content.mediaSize,
+        mediaMime: content.mediaMime,
+        mediaStatus: "ready" as const,
+      }
   }
 }
 
@@ -90,6 +100,14 @@ export function toMessageDto(row: MessageRow): MessageDto {
               durationMs: row.mediaDurationMs ?? 0,
             }
           : { status: row.mediaStatus === "failed" ? ("failed" as const) : ("processing" as const) },
+    }),
+    ...(row.kind === "file" && {
+      file: {
+        url,
+        name: row.mediaName ?? "file",
+        size: row.mediaSize ?? 0,
+        mime: row.mediaMime ?? "application/octet-stream",
+      },
     }),
     createdAt: row.createdAt.toISOString(),
   }

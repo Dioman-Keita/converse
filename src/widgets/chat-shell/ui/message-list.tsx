@@ -1,7 +1,7 @@
 import { AlertCircle, Clock } from "lucide-react"
 import { useState } from "react"
 
-import { MediaAttachment, VoicePlayer } from "@/entities/message"
+import { FileAttachment, MediaAttachment, VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import type { Room } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
@@ -85,7 +85,16 @@ export function MessageList({
                   newGroup && "mt-1.5",
                 )}
               >
-                {message.kind === "image" || message.kind === "video" ? (
+                {message.kind === "file" ? (
+                  <div
+                    className={cn(
+                      "max-w-full rounded-2xl",
+                      message.status === "failed" && "opacity-60 ring-2 ring-destructive/60",
+                    )}
+                  >
+                    <FileAttachment message={message} mine={mine && message.status !== "failed"} />
+                  </div>
+                ) : message.kind === "image" || message.kind === "video" ? (
                   <div
                     className={cn(
                       "max-w-full rounded-xl",

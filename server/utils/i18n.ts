@@ -43,6 +43,7 @@ const en = {
   videoTooLarge: "Video too large (95 MB max)",
   videoTooLong: "A video can't be longer than 5 minutes",
   videoUnreadable: "Unreadable or unsupported video",
+  fileTooLarge: "File too large (95 MB max)",
 }
 
 export type MessageKey = keyof typeof en
@@ -77,6 +78,7 @@ const fr: Record<MessageKey, string> = {
   videoTooLarge: "Vidéo trop volumineuse (95 Mo maximum)",
   videoTooLong: "Une vidéo ne peut pas dépasser 5 minutes",
   videoUnreadable: "Vidéo illisible ou format non pris en charge",
+  fileTooLarge: "Fichier trop volumineux (95 Mo maximum)",
 }
 
 const messages: Record<Locale, Record<MessageKey, string>> = { en, fr }

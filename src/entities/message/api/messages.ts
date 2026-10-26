@@ -37,6 +37,22 @@ export async function uploadMedia(
   return message
 }
 
+/** Uploads a document as-is (name sent URI-encoded in X-File-Name), reporting progress. */
+export async function uploadDocument(
+  roomId: string,
+  file: File,
+  clientId: string,
+  onProgress: (fraction: number) => void,
+): Promise<Message> {
+  const { message } = await uploadFile<{ message: Message }>(
+    `/api/rooms/${roomId}/files?clientId=${encodeURIComponent(clientId)}`,
+    file,
+    onProgress,
+    { "x-file-name": encodeURIComponent(file.name) },
+  )
+  return message
+}
+
 /** Uploads a recorded voice note; the server converts it and broadcasts the message. */
 export async function postVoice(
   roomId: string,

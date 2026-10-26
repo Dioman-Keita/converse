@@ -10,6 +10,7 @@ export function uploadFile<T>(
   path: string,
   file: Blob,
   onProgress?: (fraction: number) => void,
+  headers: Record<string, string> = {},
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -17,6 +18,7 @@ export function uploadFile<T>(
     xhr.withCredentials = true
     xhr.setRequestHeader("content-type", file.type || "application/octet-stream")
     xhr.setRequestHeader("accept-language", currentLocale())
+    for (const [name, value] of Object.entries(headers)) xhr.setRequestHeader(name, value)
     xhr.responseType = "json"
 
     xhr.upload.onprogress = (event) => {

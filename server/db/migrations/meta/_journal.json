@@ -43,6 +43,13 @@
       "when": 1793011099789,
       "tag": "0005_strong_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793013289787,
+      "tag": "0006_marvelous_nico_minoru",
+      "breakpoints": true
     }
   ]
 }

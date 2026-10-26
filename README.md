@@ -2,7 +2,7 @@
 
 **Self-hosted** realtime chat: your PC (or any machine with Docker) is the server, and anyone on the Internet can use it from a browser.
 
-- Accounts (email + password), direct and group conversations, realtime text, **voice**, **photo** and **video** messages, history.
+- Accounts (email + password), direct and group conversations, realtime text, **voice**, **photo**, **video** and **document** messages, history.
 - Online status, "last seen…" and "is typing…".
 - Web interface that works on phones and desktops, in **English** (default) or **French**.
 - Profile settings: display name and interface language, saved on your account.
@@ -153,6 +153,7 @@ ngrok offers a free static domain, but on the free plan **every visitor first se
 3. Messages arrive in realtime. `Enter` sends, `Shift + Enter` adds a new line.
 4. **Voice message**: with the text box empty, tap the **microphone** 🎤, speak, then **Send** (or the trash icon to discard). 5 minutes max; the browser asks for microphone access the first time.
    **Photos and videos**: tap the **photo** icon left of the text box and pick one or more files (gallery or camera on phones). Photos are straightened, resized (2048 px max) and stripped of their metadata, including GPS position; tap a photo to view it full screen. Videos are converted so every phone and browser can play them: the message shows "Processing video…" for a few seconds (longer for long videos), then the player appears. Limits: photos 25 MB, videos 95 MB and 5 minutes.
+   **Documents** (PDF, Word, Excel, ZIP… any file): tap the **paperclip** and pick one or more files. They're sent exactly as they are (95 MB max) and the other person taps the card to download them. To send a photo in original quality, send it as a document.
 5. A badge shows unread messages; the dot under your name shows the connection state. In a conversation, the header shows whether the other person is online or when they were last seen, and when they're typing.
 6. **Settings** (gear icon, or tap your name, top left): change your display name and the interface language (**English** / **Français**). The language is saved on your account, so it follows you on every device; before signing in, the sign-in pages use the last language chosen on that device.
 
@@ -200,7 +201,7 @@ The `backup` service writes to `./backups` **on startup and then every 24 h**, a
 - `converse-YYYYMMDD-HHMMSS.dump`: the database (accounts, conversations, messages);
 - `converse-uploads-YYYYMMDD-HHMMSS.tar.gz`: the audio files of voice messages.
 
-The database and audio files live in **Docker volumes** (`pgdata` and `uploads`), not in a project folder: use these backups to keep them safe or move them. You need **both files from the same backup** to restore voice notes, photos and videos that display.
+The database and audio files live in **Docker volumes** (`pgdata` and `uploads`), not in a project folder: use these backups to keep them safe or move them. You need **both files from the same backup** to restore voice notes, photos, videos and documents that open.
 
 > The uploads archive contains every photo and video, so it grows with them, times `BACKUP_KEEP` copies. Watch the size of `backups/` if people send many videos, and lower `BACKUP_KEEP` if needed.
 

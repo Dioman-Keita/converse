@@ -51,6 +51,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | Voice notes | Browser MediaRecorder → raw upload → ffmpeg to mono AAC/M4A (`server/utils/voice.ts`) → `uploads` volume |
 | Photos | Raw upload → sharp: EXIF auto-rotate, ≤ 2048 px, all metadata stripped (GPS…), WebP (alpha and GIF animation kept) (`server/utils/images.ts`). SVG refused |
 | Videos | Raw upload → ffprobe check → message posted as `processing` → background queue (one at a time): ffmpeg to H.264/AAC MP4 ≤ 1280 px + JPEG poster → same message re-broadcast `ready` or `failed` (`server/utils/videos.ts`). Asynchronous because conversion can exceed the tunnel's ~100 s request limit; interrupted conversions are marked `failed` at startup |
+| Documents | Raw upload stored as-is under a random name without extension (`server/utils/files.ts`); display name sanitized (no folders, no control characters, ≤ 200 chars); always served as `application/octet-stream` + `Content-Disposition: attachment`, so an HTML/SVG "document" never renders in the app's origin |
 | Backups | `backup` service every 24 h, keeps 7: `pg_dump -Fc` + tar.gz of the `uploads` volume |
 
 ### REST
@@ -70,6 +71,7 @@ FSD import rule: `app → pages → widgets → features → entities → shared
 | POST | `/api/rooms/:id/media` | raw photo (JPEG, PNG, WebP, GIF, AVIF, HEIC; ≤ 25 MB) or video (`video/*`, ≤ 95 MB, ≤ 5 min) body, `?clientId=` → `{ message }` |
 | GET | `/api/media/:messageId` | the message's media (`audio/mp4`, `image/webp` or `video/mp4`), room members only, `Range` support (needed by iOS Safari), `nosniff` |
 | GET | `/api/media/:messageId/poster` | a ready video's poster frame (`image/jpeg`) |
+| POST | `/api/rooms/:id/files` | any file as raw body (≤ 95 MB), name URI-encoded in `X-File-Name`, type in `Content-Type`, `?clientId=` → `{ message }`; downloaded through `GET /api/media/:messageId` as an attachment |
 
 User-facing error messages (`message` of 4xx responses) come in the language of the request's `Accept-Language` (English or French, English otherwise). Clients should rely on HTTP status codes and WebSocket `code`s, never on message text.
 
@@ -94,6 +96,7 @@ Server → client:
 { "type": "message", "message": { "id", "kind": "image", "image": { "url": "/api/media/…", "width": 1536, "height": 2048 }, … } }
 { "type": "message", "message": { "id", "kind": "video", "video": { "status": "processing" }, … } }
 { "type": "message", "message": { "id", "kind": "video", "video": { "status": "ready", "url", "posterUrl", "width", "height", "durationMs" }, … } }
+{ "type": "message", "message": { "id", "kind": "file", "file": { "url": "/api/media/…", "name": "Report.pdf", "size": 482133, "mime": "application/pdf" }, … } }
 { "type": "room", "room": { "id", "name", "type", "createdAt", "lastMessageAt", "members": [{ "id", "name", "email", "online", "lastSeenAt" }] } }
 { "type": "presence", "userId": "…", "online": false, "lastSeenAt": "2026-10-23T14:29:46.000Z" }
 { "type": "typing", "roomId": "…", "userId": "…", "typing": true }
