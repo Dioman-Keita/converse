@@ -1,60 +1,61 @@
 # Converse
 
-Chat temps réel **auto-hébergé** : ton PC (ou n'importe quelle machine avec Docker) fait office de serveur, et n'importe qui sur Internet peut l'utiliser depuis un navigateur.
+**Self-hosted** realtime chat: your PC (or any machine with Docker) is the server, and anyone on the Internet can use it from a browser.
 
-- Comptes (email + mot de passe), conversations privées et de groupe, messages texte et **vocaux** en temps réel, historique.
-- Statut en ligne, « en ligne il y a… » et « en train d'écrire ».
-- Interface en français, utilisable sur téléphone et sur ordinateur.
-- Une seule commande pour tout lancer : `docker compose up -d`.
-- Toutes les données restent chez toi (Postgres) avec sauvegarde automatique quotidienne.
-- Accès public **sans configurer ta box** grâce à un tunnel Cloudflare sortant.
+- Accounts (email + password), direct and group conversations, realtime text and **voice** messages, history.
+- Online status, "last seen…" and "is typing…".
+- Web interface that works on phones and desktops.
+- One command to run everything: `docker compose up -d`.
+- All data stays with you (Postgres) with automatic daily backups.
+- Public access **without touching your router**, through an outbound Cloudflare Tunnel.
 
-Détails techniques (API REST, protocole WebSocket, choix d'architecture) : [ARCHITECTURE.md](ARCHITECTURE.md).
+Technical details (REST API, WebSocket protocol, design decisions): [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ```
-Navigateur (iOS, Android, PC)
+Browser (iOS, Android, desktop)
         │ HTTPS / WSS
         ▼
-  Cloudflare Tunnel ◄── connexion sortante depuis ton PC (aucun port ouvert)
+  Cloudflare Tunnel ◄── outbound connection from your PC (no open port)
         │
-┌───────┴──────── docker compose (ton PC) ─────────┐
-│ quick-tunnel / tunnel  → expose l'app            │
-│ app      → site web + API + WebSocket (Node 24)  │
-│ db       → Postgres 17 (jamais exposé)           │
-│ backup   → pg_dump quotidien dans ./backups      │
+┌───────┴──────── docker compose (your PC) ────────┐
+│ quick-tunnel / tunnel  → exposes the app         │
+│ app      → website + API + WebSocket (Node 24)   │
+│ db       → Postgres 17 (never exposed)           │
+│ backup   → daily dumps into ./backups            │
 └──────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Sommaire
+## Contents
 
-1. [Prérequis](#prérequis)
-2. [Lancer le serveur](#lancer-le-serveur)
-3. [Rendre l'app accessible depuis Internet](#rendre-lapp-accessible-depuis-internet)
-4. [Avoir une URL fixe](#avoir-une-url-fixe)
-5. [Utiliser l'app](#utiliser-lapp)
-6. [Exploitation au quotidien](#exploitation-au-quotidien)
-7. [Sauvegardes et restauration](#sauvegardes-et-restauration)
-8. [Développement](#développement)
-9. [Dépannage](#dépannage)
-10. [Limites connues](#limites-connues)
+1. [Requirements](#requirements)
+2. [Run the server](#run-the-server)
+3. [Make the app reachable from the Internet](#make-the-app-reachable-from-the-internet)
+4. [Get a permanent URL](#get-a-permanent-url)
+5. [Using the app](#using-the-app)
+6. [Day-to-day operations](#day-to-day-operations)
+7. [Backups and restore](#backups-and-restore)
+8. [Development](#development)
+9. [Troubleshooting](#troubleshooting)
+10. [Known limitations](#known-limitations)
+11. [License](#license)
 
 ---
 
-## Prérequis
+## Requirements
 
-| Outil | Pour quoi | Version |
+| Tool | Used for | Version |
 | --- | --- | --- |
-| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Faire tourner le serveur | récente |
-| [Node.js](https://nodejs.org/) | Développement uniquement | **24 LTS** (voir `.nvmrc`) |
-| Git | Récupérer le code | — |
+| [Docker Desktop](https://www.docker.com/products/docker-desktop/) | Running the server | recent |
+| [Node.js](https://nodejs.org/) | Development only | **24 LTS** (see `.nvmrc`) |
+| Git | Getting the code | — |
 
-Aucun compte Cloudflare n'est nécessaire pour démarrer (Quick Tunnel).
+No Cloudflare account is needed to get started (Quick Tunnel).
 
 ---
 
-## Lancer le serveur
+## Run the server
 
 ```bash
 git clone https://github.com/Dioman-Keita/converse.git
@@ -62,19 +63,19 @@ cd converse
 cp .env.example .env
 ```
 
-Ouvre `.env` et remplace `DB_PASSWORD=change-me` par un mot de passe long et aléatoire. Il ne sert qu'entre les conteneurs, tu n'auras jamais à le taper.
+Open `.env` and replace `DB_PASSWORD=change-me` with a long random password. It is only used between containers; you will never type it.
 
 ```bash
 docker compose up -d
 ```
 
-Le premier lancement construit l'image (quelques minutes). Ensuite :
+The first start builds the image (a few minutes). Then:
 
-- l'app est disponible sur **http://localhost:3000** (sur ton PC uniquement) ;
-- la base est créée et mise à jour automatiquement au démarrage ;
-- une première sauvegarde est écrite dans `./backups`.
+- the app is available at **http://localhost:3000** (on your PC only);
+- the database is created and migrated automatically on startup;
+- a first backup is written to `./backups`.
 
-Vérifier que tout tourne :
+Check that everything runs:
 
 ```bash
 docker compose ps
@@ -82,195 +83,196 @@ docker compose ps
 
 ---
 
-## Rendre l'app accessible depuis Internet
+## Make the app reachable from the Internet
 
-### Option rapide : Quick Tunnel (aucun compte, aucun domaine)
+### Quick option: Quick Tunnel (no account, no domain)
 
 ```bash
 docker compose --profile quick-tunnel up -d
 ```
 
-Récupérer l'adresse publique :
+Get the public address:
 
 ```bash
 docker compose logs quick-tunnel | grep trycloudflare.com
 ```
 
-Tu obtiens une adresse du type `https://mots-au-hasard.trycloudflare.com` : c'est celle à partager. Elle fonctionne en HTTPS, en 4G comme en Wi-Fi, sans rien configurer sur ta box.
+You get an address like `https://random-words.trycloudflare.com`: that's the one to share. It works over HTTPS, on mobile data as well as Wi-Fi, with nothing to configure on your router.
 
-> ⚠️ **L'adresse change à chaque redémarrage** du tunnel (redémarrage du PC, de Docker, ou `docker compose down`). Il faut alors repartager la nouvelle. Pour une adresse permanente, voir [Avoir une URL fixe](#avoir-une-url-fixe).
+> ⚠️ **The address changes every time the tunnel restarts** (PC or Docker restart, `docker compose down`). You then have to share the new one. For a permanent address, see [Get a permanent URL](#get-a-permanent-url).
 
-### Option durable : tunnel nommé Cloudflare (ton domaine)
+### Lasting option: named Cloudflare tunnel (your domain)
 
-Voir la section suivante.
+See the next section.
 
 ---
 
-## Avoir une URL fixe
+## Get a permanent URL
 
-Une adresse qui ne change jamais est indispensable pour partager un lien durable et pour la future app Android. Il faut que **quelque chose** sur Internet ait une adresse permanente ; voici les options, de la plus recommandée à la moins adaptée.
+An address that never changes is needed to share a lasting link and for the upcoming Android app. **Something** on the Internet has to own a permanent address; here are the options, from most to least recommended.
 
-### 1. Un nom de domaine + tunnel nommé Cloudflare — recommandé
+### 1. A domain name + named Cloudflare tunnel — recommended
 
-**Coût : ~10 €/an pour le domaine. Le tunnel reste gratuit (plan Free Cloudflare).**
+**Cost: ~€10/year for the domain. The tunnel stays free (Cloudflare Free plan).**
 
-Un tunnel nommé exige un domaine dont les DNS sont gérés par Cloudflare. Tu obtiens une adresse comme `https://chat.mondomaine.com`.
+A named tunnel requires a domain whose DNS is managed by Cloudflare. You get an address like `https://chat.yourdomain.com`.
 
-1. Achète un domaine (par exemple via Cloudflare Registrar, vendu à prix coûtant) ou ajoute à Cloudflare un domaine que tu possèdes déjà (plan **Free**).
-2. Dans le tableau de bord Cloudflare : **Zero Trust → Networks → Tunnels → Create a tunnel** → type **Cloudflared**.
-3. Donne-lui un nom (`converse`), puis copie le **token** affiché (la longue chaîne après `--token`).
-4. Onglet **Public Hostname** : sous-domaine `chat`, domaine `mondomaine.com`, service `HTTP` → `app:3000`.
-5. Colle le token dans `.env` :
+1. Buy a domain (e.g. through Cloudflare Registrar, sold at cost) or add a domain you already own to Cloudflare (**Free** plan).
+2. In the Cloudflare dashboard: **Zero Trust → Networks → Tunnels → Create a tunnel** → type **Cloudflared**.
+3. Name it (`converse`), then copy the displayed **token** (the long string after `--token`).
+4. **Public Hostname** tab: subdomain `chat`, domain `yourdomain.com`, service `HTTP` → `app:3000`.
+5. Paste the token into `.env`:
    ```
    TUNNEL_TOKEN=eyJhIjoi...
    ```
-6. Lance le profil `tunnel` (à la place de `quick-tunnel`) :
+6. Start the `tunnel` profile (instead of `quick-tunnel`):
    ```bash
    docker compose --profile quick-tunnel down
    docker compose --profile tunnel up -d
    ```
 
-L'adresse `https://chat.mondomaine.com` reste la même pour toujours, même si tu changes de PC.
+`https://chat.yourdomain.com` stays the same forever, even if you move to another PC.
 
-### 2. Tailscale Funnel — gratuit, sans domaine (pas encore intégré)
+### 2. Tailscale Funnel — free, no domain (not integrated yet)
 
-Tailscale propose gratuitement une adresse fixe du type `https://mon-pc.nom-du-reseau.ts.net`. C'est la meilleure option **gratuite et sans domaine**, mais elle n'est pas encore intégrée au `docker-compose.yml` et le fonctionnement du WebSocket à travers Funnel reste à vérifier. Le domaine `ts.net` ne peut pas être personnalisé.
+Tailscale offers a free permanent address like `https://my-pc.tailnet-name.ts.net`. It's the best **free, no-domain** option, but it isn't wired into `docker-compose.yml` yet and WebSocket support through Funnel still needs to be verified. The `ts.net` domain can't be customized.
 
-### 3. ngrok (domaine statique gratuit) — déconseillé pour l'app web
+### 3. ngrok (free static domain) — not recommended for the web app
 
-ngrok offre un domaine statique gratuit, mais sur le plan gratuit **chaque visiteur voit d'abord une page d'avertissement ngrok** avant d'arriver sur l'app. Acceptable pour l'API d'une app mobile (contournable par un en-tête), pas pour des amis qui ouvrent un lien dans leur navigateur.
-
----
-
-## Utiliser l'app
-
-1. Ouvre l'adresse (locale ou publique) et clique sur **Créer un compte**.
-2. Une fois connecté, clique sur l'icône **Nouvelle conversation** (en haut à gauche) :
-   - **Privée** : l'email d'une personne déjà inscrite ;
-   - **Groupe** : un nom de groupe + les emails des membres, séparés par des virgules.
-3. Les messages arrivent en temps réel. `Entrée` envoie, `Maj + Entrée` fait un retour à la ligne.
-4. **Message vocal** : zone de texte vide → touche le **micro** 🎤, parle, puis **Envoyer** (ou la corbeille pour annuler). 5 minutes maximum ; le navigateur demande l'accès au micro la première fois.
-5. Une pastille indique les messages non lus ; le point sous ton nom indique l'état de la connexion (**En ligne**, **Connexion…**, **Hors ligne — reconnexion**). Dans une conversation, l'en-tête montre si l'autre personne est en ligne ou depuis quand elle ne l'est plus, et quand elle écrit.
-
-Bon à savoir :
-- les personnes doivent **s'inscrire avant** qu'on puisse démarrer une conversation avec elles ;
-- ouvrir une conversation directe qui existe déjà la rouvre au lieu d'en créer une deuxième ;
-- un message non parti s'affiche en rouge : touche-le pour le renvoyer (vocaux compris, tant que la page n'a pas été rechargée) ;
-- le micro ne fonctionne qu'en **HTTPS** (adresse du tunnel) ou sur `localhost`, pas via une adresse `http://192.168…` du réseau local.
+ngrok offers a free static domain, but on the free plan **every visitor first sees an ngrok warning page** before reaching the app. Acceptable for a mobile app's API (it can be bypassed with a header), not for friends opening a link in their browser.
 
 ---
 
-## Exploitation au quotidien
+## Using the app
 
-| Action | Commande |
+1. Open the address (local or public) and click **Create account**.
+2. Once signed in, click the **New conversation** icon (top left):
+   - **Direct**: the email of someone who already has an account;
+   - **Group**: a group name + members' emails, separated by commas.
+3. Messages arrive in realtime. `Enter` sends, `Shift + Enter` adds a new line.
+4. **Voice message**: with the text box empty, tap the **microphone** 🎤, speak, then **Send** (or the trash icon to discard). 5 minutes max; the browser asks for microphone access the first time.
+5. A badge shows unread messages; the dot under your name shows the connection state. In a conversation, the header shows whether the other person is online or when they were last seen, and when they're typing.
+
+Good to know:
+- people must **sign up first** before you can start a conversation with them;
+- opening a direct conversation that already exists reopens it instead of creating a second one;
+- a message that failed to send turns red: tap it to resend (voice notes included, as long as the page hasn't been reloaded);
+- the microphone only works over **HTTPS** (tunnel address) or on `localhost`, not through a local `http://192.168…` address.
+
+---
+
+## Day-to-day operations
+
+| Action | Command |
 | --- | --- |
-| Démarrer (avec Quick Tunnel) | `docker compose --profile quick-tunnel up -d` |
-| Voir l'adresse publique | `docker compose logs quick-tunnel \| grep trycloudflare.com` |
-| État des services | `docker compose ps` |
-| Logs du serveur | `docker compose logs -f app` |
-| Arrêter (les données sont conservées) | `docker compose --profile quick-tunnel down` |
-| Couper seulement l'accès public | `docker compose stop quick-tunnel` |
-| Mettre à jour après un `git pull` | `docker compose --profile quick-tunnel up -d --build` |
+| Start (with Quick Tunnel) | `docker compose --profile quick-tunnel up -d` |
+| Show the public address | `docker compose logs quick-tunnel \| grep trycloudflare.com` |
+| Service status | `docker compose ps` |
+| Server logs | `docker compose logs -f app` |
+| Stop (data is kept) | `docker compose --profile quick-tunnel down` |
+| Cut public access only | `docker compose stop quick-tunnel` |
+| Update after a `git pull` | `docker compose --profile quick-tunnel up -d --build` |
 
-### Garder le PC disponible
+### Keep the PC available
 
-Le chat n'est accessible que si ton PC est **allumé et éveillé** :
+The chat is only reachable while your PC is **on and awake**:
 
-- Windows : *Paramètres → Système → Alimentation → Mise en veille* → **Jamais** (au moins sur secteur).
-- Docker Desktop : *Settings → General* → **Start Docker Desktop when you sign in**. Les conteneurs redémarrent seuls (`restart: unless-stopped`), mais l'adresse Quick Tunnel, elle, change.
+- Windows: *Settings → System → Power → Sleep* → **Never** (at least when plugged in).
+- Docker Desktop: *Settings → General* → **Start Docker Desktop when you sign in**. Containers restart on their own (`restart: unless-stopped`), but the Quick Tunnel address changes.
 
-### Supprimer les comptes de test
+### Delete test accounts
 
 ```bash
 docker compose exec db psql -U converse -d converse -c "delete from users where email like '%@test.local' or email like '%@t.l';"
 ```
 
-Leurs sessions, adhésions et messages sont supprimés en cascade.
+Their sessions, memberships and messages are deleted along with them.
 
 ---
 
-## Sauvegardes et restauration
+## Backups and restore
 
-Le service `backup` écrit dans `./backups`, **au démarrage puis toutes les 24 h**, et garde les **7 derniers** de chaque (réglable via `BACKUP_KEEP` et `BACKUP_INTERVAL` dans `.env`) :
+The `backup` service writes to `./backups` **on startup and then every 24 h**, and keeps the **last 7** of each (configurable with `BACKUP_KEEP` and `BACKUP_INTERVAL` in `.env`):
 
-- `converse-AAAAMMJJ-HHMMSS.dump` : la base (comptes, conversations, messages) ;
-- `converse-uploads-AAAAMMJJ-HHMMSS.tar.gz` : les fichiers audio des messages vocaux.
+- `converse-YYYYMMDD-HHMMSS.dump`: the database (accounts, conversations, messages);
+- `converse-uploads-YYYYMMDD-HHMMSS.tar.gz`: the audio files of voice messages.
 
-La base et les fichiers audio vivent dans des **volumes Docker** (`pgdata` et `uploads`), pas dans un dossier du projet : utilise ces sauvegardes pour les mettre à l'abri ou les déplacer. Il faut **les deux fichiers d'une même sauvegarde** pour restaurer des vocaux qui se lisent.
+The database and audio files live in **Docker volumes** (`pgdata` and `uploads`), not in a project folder: use these backups to keep them safe or move them. You need **both files from the same backup** to restore voice notes that play.
 
-Forcer une sauvegarde immédiate :
+Force an immediate backup:
 
 ```bash
 docker compose restart backup
 ```
 
-Pour mettre tes sauvegardes à l'abri, synchronise le dossier `backups/` avec OneDrive ou Google Drive : c'est le seul dossier à copier ailleurs.
+To keep your backups safe, sync the `backups/` folder with OneDrive or Google Drive: it's the only folder to copy elsewhere.
 
-### Ancienne installation : base dans `data/postgres`
+### Older installs: database in `data/postgres`
 
-Les premières versions stockaient la base dans le dossier `data/postgres`. Sous Windows et macOS, Docker Desktop partage ce dossier lentement et de façon peu fiable pour une base de données (plantages et récupérations à répétition) : la base vit désormais dans le volume `pgdata`. Pour migrer **sans perte** :
+Early versions stored the database in the `data/postgres` folder. On Windows and macOS, Docker Desktop shares that folder slowly and unreliably for a database (repeated crashes and recoveries), so the database now lives in the `pgdata` volume. To migrate **without data loss**:
 
 ```bash
 docker compose stop app backup
 docker compose exec -T db pg_dump -U converse -Fc -f /tmp/migration.dump converse
 docker compose cp db:/tmp/migration.dump backups/migration.dump
 docker compose stop db
-git pull                      # récupère le docker-compose.yml qui utilise `pgdata`
-docker compose up -d db       # crée la base vide dans le volume
+git pull                      # gets the docker-compose.yml that uses `pgdata`
+docker compose up -d db       # creates the empty database in the volume
 docker compose cp backups/migration.dump db:/tmp/migration.dump
 docker compose exec -T db pg_restore -U converse -d converse --no-owner /tmp/migration.dump
 docker compose --profile quick-tunnel up -d --build
 ```
 
-Sous Git Bash, préfixe les commandes contenant `/tmp/…` par `MSYS_NO_PATHCONV=1`. Vérifie que tout est là (connexion, conversations, vocaux) avant de supprimer l'ancien dossier `data/postgres`, que la nouvelle configuration n'utilise plus.
+In Git Bash, prefix the commands containing `/tmp/…` with `MSYS_NO_PATHCONV=1`. Check that everything is there (sign-in, conversations, voice notes) before deleting the old `data/postgres` folder, which the new configuration no longer uses.
 
-### Restaurer une sauvegarde
+### Restore a backup
 
 ```bash
 docker compose stop app
-docker compose exec -T db pg_restore -U converse -d converse --clean --if-exists < backups/converse-AAAAMMJJ-HHMMSS.dump
-docker compose run --rm --no-deps -v ./backups:/backups:ro app tar -xzf /backups/converse-uploads-AAAAMMJJ-HHMMSS.tar.gz -C /app/data/uploads
+docker compose exec -T db pg_restore -U converse -d converse --clean --if-exists < backups/converse-YYYYMMDD-HHMMSS.dump
+docker compose run --rm --no-deps -v ./backups:/backups:ro app tar -xzf /backups/converse-uploads-YYYYMMDD-HHMMSS.tar.gz -C /app/data/uploads
 docker compose start app
 ```
 
-### Changer de machine
+### Move to another machine
 
-1. Sur la nouvelle machine : `git clone`, puis copie ton `.env` et la dernière sauvegarde de `backups/` (le `.dump` **et** le `.tar.gz` correspondant).
-2. `docker compose up -d`, puis restaure la sauvegarde (commande ci-dessus).
-3. Avec un tunnel nommé, l'adresse publique reste la même ; avec Quick Tunnel, une nouvelle adresse est générée.
+1. On the new machine: `git clone`, then copy your `.env` and the latest backup from `backups/` (the `.dump` **and** its matching `.tar.gz`).
+2. `docker compose up -d`, then restore the backup (commands above).
+3. With a named tunnel the public address stays the same; with Quick Tunnel a new address is generated.
 
 ---
 
-## Développement
+## Development
 
 ```bash
 npm install
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
 ```
 
-Renseigne dans `.env` une `DATABASE_URL` qui pointe vers `localhost:5432` avec ton `DB_PASSWORD` (voir `.env.example`), puis :
+Set a `DATABASE_URL` in `.env` that points to `localhost:5432` with your `DB_PASSWORD` (see `.env.example`), then:
 
 ```bash
 npm run dev
 ```
 
-L'app de dev tourne sur http://localhost:3000 : arrête d'abord le conteneur `app` (`docker compose stop app`) pour libérer le port, ou lance `npm run dev -- --port 3001`.
+The dev app runs on http://localhost:3000: stop the `app` container first (`docker compose stop app`) to free the port, or run `npm run dev -- --port 3001`.
 
-| Script | Rôle |
+| Script | Purpose |
 | --- | --- |
-| `npm run dev` | Serveur de dev (Vite + Nitro, rechargement à chaud) |
-| `npm run build` | Build de production dans `.output/` |
-| `npm run lint` / `npm run format` / `npm run check` | ESLint et Prettier |
-| `npm run generate-routes` | Régénère `src/routeTree.gen.ts` |
-| `npm run db:generate` | Crée une migration après modification de `server/db/schema.ts` |
-| `npm run db:studio` | Explorateur de base Drizzle Studio |
-| `npm run test:e2e` | Tests d'intégration du serveur (REST + WebSocket) contre le build et un vrai Postgres |
+| `npm run dev` | Dev server (Vite + Nitro, hot reload) |
+| `npm run build` | Production build into `.output/` |
+| `npm run lint` / `npm run format` / `npm run check` | ESLint and Prettier |
+| `npm run generate-routes` | Regenerates `src/routeTree.gen.ts` |
+| `npm run db:generate` | Creates a migration after editing `server/db/schema.ts` |
+| `npm run db:studio` | Drizzle Studio database browser |
+| `npm run test` | Unit tests (Vitest, `src/**/*.test.ts`) |
+| `npm run test:e2e` | Server integration tests (REST + WebSocket) against the build and a real Postgres |
 
-Les migrations sont appliquées automatiquement au démarrage du serveur.
+Migrations are applied automatically when the server starts.
 
-### Tests d'intégration
+### Integration tests
 
-`tests/e2e/` lance le serveur buildé (`node .output/server/index.mjs`) sur le port 3123 et le teste contre une base Postgres **dédiée** : les tests y créent des comptes et des salons, ne les pointe jamais vers la vraie base.
+`tests/e2e/` starts the built server (`node .output/server/index.mjs`) on port 3123 and tests it against a **dedicated** Postgres database: the tests create accounts and rooms there, so never point them at the real database.
 
 ```bash
 docker run -d --name converse-e2e-db -p 127.0.0.1:55432:5432 -e POSTGRES_USER=converse -e POSTGRES_PASSWORD=converse -e POSTGRES_DB=converse_test postgres:17
@@ -284,60 +286,66 @@ npm run build
 npm run test:e2e
 ```
 
-Variables facultatives : `E2E_DATABASE_URL` (par défaut `postgres://converse:converse@127.0.0.1:55432/converse_test`), `E2E_PORT` (par défaut `3123`) et `E2E_SERVER_LOG=1` pour afficher les logs du serveur. Pense à relancer `npm run build` après une modification de `server/`.
+Optional variables: `E2E_DATABASE_URL` (default `postgres://converse:converse@127.0.0.1:55432/converse_test`), `E2E_PORT` (default `3123`) and `E2E_SERVER_LOG=1` to print the server logs. Remember to re-run `npm run build` after changing `server/`. Voice tests are skipped when `ffmpeg` isn't installed locally; CI installs it.
 
-La CI GitHub Actions (`.github/workflows/ci.yml`) exécute sur chaque PR et chaque push sur `main` : vérification des types, ESLint, build puis ces tests avec un service `postgres:17`.
+GitHub Actions CI (`.github/workflows/ci.yml`) runs on every PR and push to `main`: type check, ESLint, unit tests, build, then these tests with a `postgres:17` service.
 
-### Organisation du code
+### Code layout
 
 ```
-server/          # backend Nitro
+server/          # Nitro backend
   api/           # REST → /api/*
   routes/ws.ts   # WebSocket → /ws
-  db/            # schéma Drizzle, client, migrations
-  utils/         # auth, hub temps réel, salons, messages
-src/             # client web — Feature-Sliced Design
+  db/            # Drizzle schema, client, migrations
+  utils/         # auth, realtime hub, rooms, messages, voice
+src/             # web client — Feature-Sliced Design
   app/ pages/ widgets/ features/ entities/ shared/
-  routes/        # routes TanStack (fines, délèguent aux pages)
-tests/e2e/       # tests d'intégration du serveur (Vitest)
+  routes/        # TanStack routes (thin, delegate to pages)
+tests/e2e/       # server integration tests (Vitest)
 ```
 
 ---
 
-## Dépannage
+## Troubleshooting
 
-**`failed to fetch oauth token … auth.docker.io … getaddrinfow`** pendant un `docker compose up`
-Docker Desktop n'arrive pas à résoudre Docker Hub (DNS). Réessaie quelques fois ; si ça persiste, règle le DNS de ta connexion Windows sur `1.1.1.1` ou `8.8.8.8`.
+**`failed to fetch oauth token … auth.docker.io … getaddrinfow`** during `docker compose up`
+Docker Desktop can't resolve Docker Hub (DNS). Retry a few times; if it persists, set your Windows network DNS to `1.1.1.1` or `8.8.8.8`.
 
-**`listen EACCES: permission denied` sur un port**
-Windows réserve certaines plages de ports (Hyper-V). Choisis un autre port.
+**`listen EACCES: permission denied` on a port**
+Windows reserves some port ranges (Hyper-V). Pick another port.
 
-**L'app affiche « Offline — reconnecting »**
-Le WebSocket est coupé ; il se reconnecte seul (et immédiatement au retour sur l'onglet). Les messages envoyés pendant ce temps passent par HTTP. Si ça dure : `docker compose ps` et `docker compose logs app`.
+**The app stays offline / reconnecting**
+The WebSocket is down; it reconnects on its own (and immediately when you come back to the tab). Messages sent meanwhile go through HTTP. If it lasts: `docker compose ps` and `docker compose logs app`.
 
-**L'adresse trycloudflare ne répond plus**
-Le tunnel a redémarré et l'adresse a changé : récupère la nouvelle avec `docker compose logs quick-tunnel | grep trycloudflare.com`.
+**The trycloudflare address stopped working**
+The tunnel restarted and the address changed: get the new one with `docker compose logs quick-tunnel | grep trycloudflare.com`.
 
-**`tar (child): Cannot connect to C: resolve failed` en restaurant les vocaux**
-Git Bash réécrit les chemins `/backups/…` en chemins Windows. Lance la commande depuis PowerShell, ou préfixe-la par `MSYS_NO_PATHCONV=1`.
+**`tar (child): Cannot connect to C: resolve failed` when restoring voice notes**
+Git Bash rewrites `/backups/…` paths into Windows paths. Run the command from PowerShell, or prefix it with `MSYS_NO_PATHCONV=1`.
 
-**Le bouton micro n'apparaît pas**
-Le navigateur n'autorise le micro qu'en HTTPS ou sur `localhost`. Utilise l'adresse du tunnel (`https://…`) plutôt qu'une adresse `http://` du réseau local.
+**The microphone button doesn't show up**
+Browsers only allow the microphone over HTTPS or on `localhost`. Use the tunnel address (`https://…`) rather than a local `http://` address.
 
-**« Accès au micro refusé »**
-Autorise le micro pour ce site dans les réglages du navigateur (icône du cadenas dans la barre d'adresse), puis réessaie.
+**"Microphone access denied"**
+Allow the microphone for this site in the browser settings (padlock icon in the address bar), then try again.
 
-**« Les messages vocaux ne sont pas disponibles sur ce serveur »**
-ffmpeg est absent : c'est le cas avec `npm run dev` sans ffmpeg installé sur la machine. L'image Docker l'inclut.
+**"Voice messages are not available on this server"**
+ffmpeg is missing: that's the case with `npm run dev` without ffmpeg installed on the machine. The Docker image includes it.
 
-**Redirigé vers la page de connexion**
-La session a expiré (30 jours) ou tu t'es déconnecté ailleurs : reconnecte-toi.
+**Redirected to the sign-in page**
+The session expired (30 days) or you signed out elsewhere: sign in again.
 
 ---
 
-## Limites connues
+## Known limitations
 
-- **PC éteint = chat hors ligne.** Pour du 24 h/24, la même stack tourne telle quelle sur un petit VPS ou un Raspberry Pi.
-- **Pas de notifications push** : un message n'est visible qu'avec l'app ouverte (prévu ainsi pour l'app web et la future app Android).
-- **Pas de mot de passe oublié** ni de connexion Google.
-- **Un seul serveur** : le temps réel est géré en mémoire, adapté à un usage entre amis ou en petite équipe.
+- **PC off = chat offline.** For 24/7 availability, the same stack runs as-is on a small VPS or a Raspberry Pi.
+- **No push notifications**: messages are only visible with the app open (by design for the web app and the upcoming Android app).
+- **No password reset** and no Google sign-in.
+- **Single server**: realtime fan-out is in memory, which suits friends or a small team.
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 Dioman Keïta
