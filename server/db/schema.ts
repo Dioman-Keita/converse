@@ -76,7 +76,7 @@ export const roomMembers = pgTable(
   ],
 )
 
-export const messageKind = pgEnum("message_kind", ["text", "voice", "image", "video"])
+export const messageKind = pgEnum("message_kind", ["text", "voice", "image", "video", "file"])
 
 // Videos are converted after upload; images and voice notes are ready at once.
 export const mediaStatus = pgEnum("media_status", ["processing", "ready", "failed"])
@@ -102,6 +102,10 @@ export const messages = pgTable(
     mediaHeight: integer("media_height"),
     mediaPosterPath: text("media_poster_path"),
     mediaStatus: mediaStatus("media_status"),
+    // Documents: original file name, size in bytes and declared type (display only).
+    mediaName: text("media_name"),
+    mediaSize: integer("media_size"),
+    mediaMime: text("media_mime"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

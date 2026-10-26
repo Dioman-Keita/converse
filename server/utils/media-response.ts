@@ -8,6 +8,7 @@ import type { H3Event } from "nitro/h3"
 import { db, schema } from "../db/client"
 import { requireUser } from "./http"
 import { localizedError } from "./i18n"
+import { attachmentDisposition } from "./files"
 import { mediaFile } from "./media"
 import { UUID_RE } from "./rooms"
 
@@ -15,6 +16,8 @@ const CONTENT_TYPES = {
   voice: "audio/mp4",
   image: "image/webp",
   video: "video/mp4",
+  // Documents are opaque bytes: the browser must download, never interpret, them.
+  file: "application/octet-stream",
 } as const
 
 /**
@@ -34,6 +37,7 @@ export async function serveMessageMedia(event: H3Event, variant: "file" | "poste
       kind: schema.messages.kind,
       mediaPath: schema.messages.mediaPath,
       posterPath: schema.messages.mediaPosterPath,
+      name: schema.messages.mediaName,
     })
     .from(schema.messages)
     .innerJoin(
@@ -61,6 +65,7 @@ export async function serveMessageMedia(event: H3Event, variant: "file" | "poste
     // A message's media never changes once ready.
     "cache-control": "private, max-age=31536000, immutable",
   }
+  if (row.kind === "file") headers["content-disposition"] = attachmentDisposition(row.name ?? "file")
 
   const range = parseRange(event.req.headers.get("range"), size)
   if (range === "invalid") {

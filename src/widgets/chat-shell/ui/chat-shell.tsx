@@ -196,6 +196,7 @@ export function ChatShell({ user, onUserChange, onLogout, onSessionExpired }: Ch
               onSend={(body) => send(activeRoom.id, body)}
               onSendVoice={(recording) => sendVoice(activeRoom.id, recording)}
               onSendMedia={(file) => sendMedia(activeRoom.id, file)}
+              onSendFile={(file) => sendMedia(activeRoom.id, file, true)}
               onTyping={(typing) => notifyTyping(activeRoom.id, typing)}
             />
           </>

@@ -1,4 +1,4 @@
-import { ImagePlus, Mic, SendHorizontal, Trash2 } from "lucide-react"
+import { ImagePlus, Mic, Paperclip, SendHorizontal, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent, KeyboardEvent } from "react"
 
@@ -12,6 +12,7 @@ const MAX_LENGTH = 4000
 // Must match the server limits (server/utils/images.ts, videos.ts).
 const MAX_IMAGE_MB = 25
 const MAX_VIDEO_MB = 95
+const MAX_FILE_MB = 95
 const MAX_VOICE_MS = 5 * 60 * 1000
 // Below this, a tap on the mic is treated as accidental and discarded.
 const MIN_VOICE_MS = 500
@@ -22,6 +23,8 @@ type MessageComposerProps = {
   onSendVoice?: (recording: Recording) => void
   /** Photos and videos are offered only when provided. */
   onSendMedia?: (file: File) => void
+  /** Documents (any file, sent as-is) are offered only when provided. */
+  onSendFile?: (file: File) => void
   /** Called on every edit: true while there is text in the box, false once it's emptied. */
   onTyping?: (typing: boolean) => void
   disabled?: boolean
@@ -35,6 +38,7 @@ export function MessageComposer({
   onSend,
   onSendVoice,
   onSendMedia,
+  onSendFile,
   onTyping,
   disabled,
 }: MessageComposerProps) {
@@ -48,7 +52,20 @@ export function MessageComposer({
   }
   const recorder = useVoiceRecorder({ maxMs: MAX_VOICE_MS, onAutoStop: sendRecording })
   const fileInput = useRef<HTMLInputElement>(null)
+  const documentInput = useRef<HTMLInputElement>(null)
   const [mediaError, setMediaError] = useState<string>()
+
+  function pickDocuments(files: FileList | null) {
+    if (!files || !onSendFile) return
+    setMediaError(undefined)
+    for (const file of files) {
+      if (file.size > MAX_FILE_MB * 1024 * 1024) {
+        setMediaError(t("file.tooLarge", { name: file.name, max: MAX_FILE_MB }))
+        continue
+      }
+      onSendFile(file)
+    }
+  }
 
   // Checked here too so nobody uploads 95 MB just to be told it's too big.
   function pickFiles(files: FileList | null) {
@@ -148,7 +165,31 @@ export function MessageComposer({
           </button>
         </p>
       )}
-      <div className="flex items-end gap-2">
+      <div className="flex items-end gap-1">
+        {onSendFile && (
+          <>
+            <input
+              ref={documentInput}
+              type="file"
+              multiple
+              hidden
+              onChange={(e) => {
+                pickDocuments(e.target.files)
+                e.target.value = ""
+              }}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              aria-label={t("composer.attachFile")}
+              disabled={disabled}
+              onClick={() => documentInput.current?.click()}
+            >
+              <Paperclip />
+            </Button>
+          </>
+        )}
         {onSendMedia && (
           <>
             <input

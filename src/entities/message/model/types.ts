@@ -14,6 +14,6 @@ export type Message = MessageDto
 export type ChatMessage = Message & {
   clientId?: string
   status: "sent" | "pending" | "failed"
-  /** Photo/video still uploading: progress (0–1) and an in-memory preview. */
-  upload?: { progress: number; localUrl: string }
+  /** Photo/video/document still uploading: progress (0–1) and, for photos and videos, an in-memory preview. */
+  upload?: { progress: number; localUrl?: string }
 }

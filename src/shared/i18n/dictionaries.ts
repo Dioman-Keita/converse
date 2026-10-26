@@ -77,6 +77,15 @@ export const en = {
   "media.open": "Open photo",
   "media.close": "Close",
 
+  "composer.attachFile": "Send a document",
+  "file.tooLarge": "{name} is too large ({max} MB max)",
+  "file.download": "Download {name}",
+  "file.uploading": "Uploading… {percent}%",
+  "bytes.b": "{n} B",
+  "bytes.kb": "{n} KB",
+  "bytes.mb": "{n} MB",
+  "bytes.gb": "{n} GB",
+
   "chat.newConversation": "New conversation",
   "chat.signOut": "Sign out",
   "chat.settings": "Settings",
@@ -209,6 +218,15 @@ export const fr: Record<MessageKey, string> = {
   "media.video": "Vidéo",
   "media.open": "Ouvrir la photo",
   "media.close": "Fermer",
+
+  "composer.attachFile": "Envoyer un document",
+  "file.tooLarge": "{name} est trop volumineux ({max} Mo maximum)",
+  "file.download": "Télécharger {name}",
+  "file.uploading": "Envoi… {percent} %",
+  "bytes.b": "{n} o",
+  "bytes.kb": "{n} Ko",
+  "bytes.mb": "{n} Mo",
+  "bytes.gb": "{n} Go",
 
   "chat.newConversation": "Nouvelle conversation",
   "chat.signOut": "Se déconnecter",

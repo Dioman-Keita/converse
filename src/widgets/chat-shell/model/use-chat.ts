@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useReducer, useRef } from "react"
 
-import { fetchMessages, postMessage, postVoice, uploadMedia } from "@/entities/message"
+import { fetchMessages, postMessage, postVoice, uploadDocument, uploadMedia } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import { fetchRooms } from "@/entities/room"
 import type { Room } from "@/entities/room"
@@ -272,15 +272,18 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
   )
 
   // Photos/videos kept until their upload succeeds, so a failed one can be retried.
-  const pendingMedia = useRef(new Map<string, File>())
+  const pendingMedia = useRef(new Map<string, { file: File; asDocument: boolean }>())
 
+  /**
+   * Photo/video (converted by the server) or, with `asDocument`, any file sent
+   * as-is. Photos and videos get an in-memory preview while uploading.
+   */
   const sendMedia = useCallback(
-    (roomId: string, file: File) => {
-      const kind = file.type.startsWith("video/") ? "video" : "image"
+    (roomId: string, file: File, asDocument = false) => {
+      const kind = asDocument ? "file" : file.type.startsWith("video/") ? "video" : "image"
       const clientId = newClientId()
-      pendingMedia.current.set(clientId, file)
-      // Shown right away from memory while it uploads (and, for videos, converts).
-      const localUrl = URL.createObjectURL(file)
+      pendingMedia.current.set(clientId, { file, asDocument })
+      const localUrl = asDocument ? undefined : URL.createObjectURL(file)
       dispatch({
         type: "messagePending",
         message: {
@@ -290,19 +293,25 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
           authorId: currentUserId,
           kind,
           body: "",
+          ...(asDocument && {
+            file: { url: "", name: file.name, size: file.size, mime: file.type },
+          }),
           createdAt: new Date().toISOString(),
           status: "pending",
           upload: { progress: 0, localUrl },
         },
       })
 
-      uploadMedia(roomId, file, clientId, (progress) =>
-        dispatch({ type: "uploadProgress", roomId, clientId, progress }),
-      )
+      const onProgress = (progress: number) =>
+        dispatch({ type: "uploadProgress", roomId, clientId, progress })
+      const upload = asDocument
+        ? uploadDocument(roomId, file, clientId, onProgress)
+        : uploadMedia(roomId, file, clientId, onProgress)
+      upload
         .then((message) => {
           pendingMedia.current.delete(clientId)
           dispatch({ type: "messageReceived", message, clientId, currentUserId })
-          URL.revokeObjectURL(localUrl)
+          if (localUrl) URL.revokeObjectURL(localUrl)
         })
         .catch(() => dispatch({ type: "messageFailed", roomId, clientId }))
     },
@@ -313,16 +322,16 @@ export function useChat(currentUserId: string, onSessionExpired: () => void) {
     (message: ChatMessage) => {
       if (!message.clientId) return
       const recording = pendingVoice.current.get(message.clientId)
-      const file = pendingMedia.current.get(message.clientId)
-      if (message.kind !== "text" && !recording && !file) return
+      const media = pendingMedia.current.get(message.clientId)
+      if (message.kind !== "text" && !recording && !media) return
       dispatch({ type: "messageDiscarded", roomId: message.roomId, clientId: message.clientId })
-      if (message.upload) URL.revokeObjectURL(message.upload.localUrl)
+      if (message.upload?.localUrl) URL.revokeObjectURL(message.upload.localUrl)
       if (recording) {
         pendingVoice.current.delete(message.clientId)
         sendVoice(message.roomId, recording)
-      } else if (file) {
+      } else if (media) {
         pendingMedia.current.delete(message.clientId)
-        sendMedia(message.roomId, file)
+        sendMedia(message.roomId, media.file, media.asDocument)
       } else {
         send(message.roomId, message.body)
       }

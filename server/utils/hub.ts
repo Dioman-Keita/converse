@@ -84,7 +84,7 @@ export type MessageDto = {
   id: string
   roomId: string
   authorId: string
-  kind: "text" | "voice" | "image" | "video"
+  kind: "text" | "voice" | "image" | "video" | "file"
   /** Empty for media messages. */
   body: string
   /** Voice messages only: AAC/M4A audio, readable by room members. */
@@ -96,6 +96,8 @@ export type MessageDto = {
    * same message is sent again as `ready` (H.264 MP4 + poster) or `failed`.
    */
   video?: VideoDto
+  /** Documents only: downloaded as-is (never displayed inline). `mime` is the sender's declared type. */
+  file?: { url: string; name: string; size: number; mime: string }
   createdAt: string
 }
 
