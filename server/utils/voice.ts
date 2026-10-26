@@ -10,6 +10,8 @@ import { tmpdir } from "node:os"
 import { join, resolve } from "node:path"
 import { promisify } from "node:util"
 
+import type { MessageKey } from "./i18n"
+
 const run = promisify(execFile)
 
 export const MAX_VOICE_BYTES = 10 * 1024 * 1024
@@ -24,10 +26,12 @@ export const UPLOADS_DIR = resolve(process.env.UPLOADS_DIR ?? "data/uploads")
 
 export class VoiceError extends Error {
   readonly status: number
+  readonly key: MessageKey
 
-  constructor(status: number, message: string) {
-    super(message)
+  constructor(status: number, key: MessageKey) {
+    super(key)
     this.status = status
+    this.key = key
   }
 }
 
@@ -56,18 +60,18 @@ export async function storeVoice(
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "ENOENT") {
         console.error("[converse] ffmpeg not found — voice messages are unavailable")
-        throw new VoiceError(503, "Les messages vocaux ne sont pas disponibles sur ce serveur")
+        throw new VoiceError(503, "voiceUnavailable")
       }
-      throw new VoiceError(400, "Fichier audio illisible")
+      throw new VoiceError(400, "voiceUnreadable")
     }
 
     const durationMs = await probeDurationMs(output)
     if (durationMs < MIN_VOICE_MS) {
-      throw new VoiceError(400, "Message vocal trop court")
+      throw new VoiceError(400, "voiceTooShort")
     }
     // Small tolerance: containers often report a few ms over the recorder's limit.
     if (durationMs > MAX_VOICE_MS + 2_000) {
-      throw new VoiceError(400, "Un message vocal ne peut pas dépasser 5 minutes")
+      throw new VoiceError(400, "voiceTooLong")
     }
     return { mediaPath: relative, durationMs }
   } catch (error) {
@@ -85,7 +89,7 @@ async function probeDurationMs(file: string): Promise<number> {
     { timeout: 15_000 },
   )
   const seconds = Number.parseFloat(stdout.trim())
-  if (!Number.isFinite(seconds)) throw new VoiceError(400, "Fichier audio illisible")
+  if (!Number.isFinite(seconds)) throw new VoiceError(400, "voiceUnreadable")
   return Math.round(seconds * 1000)
 }
 

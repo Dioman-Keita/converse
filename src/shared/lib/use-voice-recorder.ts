@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
+import type { MessageKey } from "@/shared/i18n"
+
 /** Preferred containers, best first. The server converts whatever we send. */
 const MIME_TYPES = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"]
 
@@ -7,7 +9,7 @@ export type RecorderState =
   | { status: "idle" }
   | { status: "starting" }
   | { status: "recording"; startedAt: number }
-  | { status: "error"; message: string }
+  | { status: "error"; message: MessageKey }
 
 export type Recording = { blob: Blob; durationMs: number }
 
@@ -26,14 +28,13 @@ function pickMimeType(): string | undefined {
   return MIME_TYPES.find((type) => MediaRecorder.isTypeSupported(type))
 }
 
-function describeError(error: unknown): string {
+/** Translation key explaining why recording couldn't start. */
+function describeError(error: unknown): MessageKey {
   const name = error instanceof DOMException ? error.name : ""
-  if (name === "NotAllowedError" || name === "SecurityError") {
-    return "Accès au micro refusé. Autorisez-le dans les réglages du navigateur."
-  }
-  if (name === "NotFoundError" || name === "OverconstrainedError") return "Aucun micro détecté."
-  if (name === "NotReadableError") return "Le micro est déjà utilisé par une autre application."
-  return "Impossible de démarrer l’enregistrement."
+  if (name === "NotAllowedError" || name === "SecurityError") return "mic.denied"
+  if (name === "NotFoundError" || name === "OverconstrainedError") return "mic.notFound"
+  if (name === "NotReadableError") return "mic.busy"
+  return "mic.failed"
 }
 
 /**

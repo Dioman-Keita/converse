@@ -17,4 +17,5 @@ export type UserDto = {
   email: string
   imageUrl: string | null
   createdAt: string
+  locale: "en" | "fr"
 }

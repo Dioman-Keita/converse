@@ -29,6 +29,13 @@
       "when": 1792768371439,
       "tag": "0003_curved_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793009952840,
+      "tag": "0004_harsh_stature",
+      "breakpoints": true
     }
   ]
 }

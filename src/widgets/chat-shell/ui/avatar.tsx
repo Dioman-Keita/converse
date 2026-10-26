@@ -1,4 +1,5 @@
 import { initials } from "@/entities/room"
+import { useI18n } from "@/shared/i18n"
 import { cn } from "@/shared/lib/utils"
 
 const HUES = [280, 250, 200, 160, 30, 340]
@@ -21,6 +22,7 @@ export function Avatar({
   /** Shows a green presence dot when true; nothing when false/undefined. */
   online?: boolean
 }) {
+  const { t } = useI18n()
   return (
     <span className="relative shrink-0">
       <span
@@ -35,7 +37,7 @@ export function Avatar({
       </span>
       {online && (
         <span
-          aria-label="En ligne"
+          aria-label={t("presence.online")}
           className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
         />
       )}

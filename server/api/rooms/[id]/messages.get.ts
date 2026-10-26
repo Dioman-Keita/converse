@@ -1,9 +1,10 @@
 import { and, desc, eq, sql } from "drizzle-orm"
-import { HTTPError, defineHandler, getQuery, getRouterParam } from "nitro/h3"
+import { defineHandler, getQuery, getRouterParam } from "nitro/h3"
 
 import { db, schema } from "../../../db/client"
 import { toMessageDto } from "../../../utils/messages"
 import { badRequest, requireUser } from "../../../utils/http"
+import { localizedError } from "../../../utils/i18n"
 import { UUID_RE, isRoomMember } from "../../../utils/rooms"
 
 /**
@@ -18,7 +19,7 @@ export default defineHandler(async (event) => {
   const roomId = getRouterParam(event, "id") ?? ""
   if (!UUID_RE.test(roomId)) throw badRequest("Invalid room id")
   if (!(await isRoomMember(roomId, user.id))) {
-    throw new HTTPError({ status: 404, message: "Room not found" })
+    throw localizedError(event, 404, "roomNotFound")
   }
 
   const query = getQuery(event)

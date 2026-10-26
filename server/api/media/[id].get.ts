@@ -2,10 +2,11 @@ import { createReadStream } from "node:fs"
 import { stat } from "node:fs/promises"
 import { Readable } from "node:stream"
 import { and, eq } from "drizzle-orm"
-import { HTTPError, defineHandler, getRouterParam } from "nitro/h3"
+import { defineHandler, getRouterParam } from "nitro/h3"
 
 import { db, schema } from "../../db/client"
 import { requireUser } from "../../utils/http"
+import { localizedError } from "../../utils/i18n"
 import { UUID_RE } from "../../utils/rooms"
 import { mediaFile } from "../../utils/voice"
 
@@ -17,7 +18,7 @@ import { mediaFile } from "../../utils/voice"
 export default defineHandler(async (event) => {
   const user = await requireUser(event)
   const messageId = getRouterParam(event, "id") ?? ""
-  const notFound = () => new HTTPError({ status: 404, message: "Média introuvable" })
+  const notFound = () => localizedError(event, 404, "mediaNotFound")
   if (!UUID_RE.test(messageId)) throw notFound()
 
   const rows = await db

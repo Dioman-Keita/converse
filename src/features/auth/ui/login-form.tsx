@@ -13,6 +13,7 @@ import {
   Input,
   Label,
 } from "@/shared/ui"
+import { useI18n } from "@/shared/i18n"
 
 import { login } from "../api/auth"
 import { FormError } from "./form-error"
@@ -22,6 +23,7 @@ import { FormError } from "./form-error"
  * Calls `POST /api/auth/login`; the server sets the session cookie.
  */
 export function LoginForm() {
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
@@ -38,7 +40,7 @@ export function LoginForm() {
       })
       await navigate({ to: "/chat" })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Échec de la connexion")
+      setError(err instanceof Error ? err.message : t("login.failed"))
       setPending(false)
     }
   }
@@ -46,28 +48,28 @@ export function LoginForm() {
   return (
     <Card className="w-full max-w-sm border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-sm">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl tracking-tight">Bon retour</CardTitle>
+        <CardTitle className="text-xl tracking-tight">{t("login.title")}</CardTitle>
         <CardDescription>
-          Connectez-vous pour accéder à Converse
+          {t("login.subtitle")}
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-2">
-            <Label htmlFor="login-email">Email</Label>
+            <Label htmlFor="login-email">{t("field.email")}</Label>
             <Input
               id="login-email"
               name="email"
               type="email"
-              placeholder="vous@exemple.com"
+              placeholder={t("field.emailPlaceholder")}
               autoComplete="email"
               required
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="login-password">Mot de passe</Label>
+            <Label htmlFor="login-password">{t("field.password")}</Label>
             <Input
               id="login-password"
               name="password"
@@ -82,15 +84,15 @@ export function LoginForm() {
 
         <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
-            {pending ? "Connexion…" : "Se connecter"}
+            {pending ? t("auth.signingIn") : t("auth.signIn")}
           </Button>
           <p className="pt-1 text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
+            {t("login.noAccount")}{" "}
             <Link
               to="/register"
               className="font-medium text-foreground underline-offset-4 hover:underline"
             >
-              Créer un compte
+              {t("login.createOne")}
             </Link>
           </p>
         </CardFooter>

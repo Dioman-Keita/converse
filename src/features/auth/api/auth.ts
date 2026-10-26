@@ -1,5 +1,6 @@
 import type { User } from "@/entities/user"
 import { api } from "@/shared/api"
+import { currentLocale } from "@/shared/i18n"
 
 import type { LoginCredentials, RegisterCredentials } from "../model/types"
 
@@ -17,7 +18,8 @@ export async function register({
   password,
 }: RegisterCredentials): Promise<User> {
   const { user } = await api<AuthResponse>("/api/auth/register", {
-    json: { name, email, password },
+    // The account starts in the language the person signed up in.
+    json: { name, email, password, locale: currentLocale() },
   })
   return user
 }

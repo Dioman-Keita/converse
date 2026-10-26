@@ -3,11 +3,12 @@ import { AlertCircle, Clock } from "lucide-react"
 import { VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import type { Room } from "@/entities/room"
+import { useI18n } from "@/shared/i18n"
 import { cn } from "@/shared/lib/utils"
 import { Button } from "@/shared/ui"
 
 import type { RoomHistory } from "../model/chat-state"
-import { formatDay, formatTime, isSameDay } from "../lib/format"
+import { isSameDay, useFormatters } from "../lib/format"
 
 type MessageListProps = {
   room: Room
@@ -31,14 +32,16 @@ export function MessageList({
   onRetry,
   typingLabel,
 }: MessageListProps) {
+  const { t } = useI18n()
+  const format = useFormatters()
   if (!history || (history.status === "loading" && !history.items.length)) {
-    return <Centered>Chargement des messages…</Centered>
+    return <Centered>{t("messages.loading")}</Centered>
   }
   if (history.status === "error" && !history.items.length) {
-    return <Centered>Impossible de charger les messages. Vérifiez votre connexion.</Centered>
+    return <Centered>{t("messages.failed")}</Centered>
   }
   if (!history.items.length && !typingLabel) {
-    return <Centered>Aucun message pour l&apos;instant — dites bonjour 👋</Centered>
+    return <Centered>{t("messages.empty")}</Centered>
   }
 
   const names = new Map(room.members.map((m) => [m.id, m.name]))
@@ -50,7 +53,7 @@ export function MessageList({
         {history.nextCursor && (
           <li className="mb-3 flex justify-center">
             <Button variant="ghost" size="sm" onClick={onLoadOlder} disabled={history.loadingOlder}>
-              {history.loadingOlder ? "Chargement…" : "Messages plus anciens"}
+              {history.loadingOlder ? t("messages.loadingOlder") : t("messages.loadOlder")}
             </Button>
           </li>
         )}
@@ -64,12 +67,12 @@ export function MessageList({
             <li key={message.clientId ?? message.id} className="flex flex-col">
               {newDay && (
                 <p className="my-3 self-center rounded-full bg-muted/60 px-3 py-0.5 text-xs text-muted-foreground">
-                  {formatDay(message.createdAt)}
+                  {format.day(message.createdAt)}
                 </p>
               )}
               {newGroup && !mine && room.type === "group" && (
                 <p className="mt-2 mb-0.5 px-1 text-xs font-medium text-muted-foreground">
-                  {names.get(message.authorId) ?? "Ancien membre"}
+                  {names.get(message.authorId) ?? t("messages.formerMember")}
                 </p>
               )}
               <div
@@ -98,7 +101,7 @@ export function MessageList({
                   )}
                 </div>
                 <span className="mt-0.5 flex items-center gap-1 px-1 text-[0.7rem] text-muted-foreground">
-                  {message.status === "pending" && <Clock className="size-3" aria-label="Envoi en cours" />}
+                  {message.status === "pending" && <Clock className="size-3" aria-label={t("messages.sending")} />}
                   {message.status === "failed" ? (
                     <button
                       type="button"
@@ -106,10 +109,10 @@ export function MessageList({
                       className="flex items-center gap-1 text-destructive hover:underline"
                     >
                       <AlertCircle className="size-3" />
-                      Non envoyé — touchez pour réessayer
+                      {t("messages.failedRetry")}
                     </button>
                   ) : (
-                    formatTime(message.createdAt)
+                    format.time(message.createdAt)
                   )}
                 </span>
               </div>

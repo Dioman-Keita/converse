@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router"
 
+import { useI18n } from "@/shared/i18n"
 import { Button } from "@/shared/ui"
 
 export function HomePage() {
+  const { t } = useI18n()
   return (
     <main className="relative flex min-h-svh flex-col items-center justify-center overflow-hidden bg-background px-6">
       <div
@@ -15,20 +17,19 @@ export function HomePage() {
           Converse
         </p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-          Discutez en temps réel
+          {t("home.title")}
         </h1>
         <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-          Messagerie instantanée auto-hébergée : vos conversations restent
-          chez vous.
+          {t("home.subtitle")}
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link to="/login">
-            <Button size="lg">Se connecter</Button>
+            <Button size="lg">{t("auth.signIn")}</Button>
           </Link>
           <Link to="/register">
             <Button variant="outline" size="lg">
-              Créer un compte
+              {t("auth.createAccount")}
             </Button>
           </Link>
         </div>

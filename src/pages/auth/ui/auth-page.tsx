@@ -2,6 +2,7 @@ import type { ReactNode } from "react"
 
 import { LoginForm, RegisterForm } from "@/features/auth"
 import type { AuthMode } from "@/features/auth"
+import { useI18n } from "@/shared/i18n"
 
 type AuthPageProps = {
   mode: AuthMode
@@ -12,6 +13,7 @@ type AuthPageProps = {
  * Routes stay thin; this page picks the right feature form.
  */
 export function AuthPage({ mode }: AuthPageProps): ReactNode {
+  const { t } = useI18n()
   return (
     <div className="relative flex min-h-svh w-full items-center justify-center overflow-hidden bg-background px-4 py-10">
       <div
@@ -29,7 +31,7 @@ export function AuthPage({ mode }: AuthPageProps): ReactNode {
             Converse
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Messagerie en temps réel
+            {t("auth.tagline")}
           </p>
         </div>
 

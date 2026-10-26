@@ -15,6 +15,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core"
 
+// Interface language, chosen in Settings (English by default).
+export const userLocale = pgEnum("user_locale", ["en", "fr"])
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
@@ -26,6 +29,7 @@ export const users = pgTable("users", {
     .defaultNow(),
   // Last time the user had a live connection (set on connect and on disconnect).
   lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  locale: userLocale("locale").notNull().default("en"),
 })
 
 export const sessions = pgTable(

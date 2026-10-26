@@ -1,9 +1,9 @@
 import { roomTitle } from "@/entities/room"
 import type { Room } from "@/entities/room"
+import { useI18n } from "@/shared/i18n"
 import { cn } from "@/shared/lib/utils"
 
-import { formatRelative } from "../lib/format"
-import { formatTyping } from "../lib/presence"
+import { useFormatters } from "../lib/format"
 import { Avatar } from "./avatar"
 
 type RoomListProps = {
@@ -24,6 +24,8 @@ export function RoomList({
   typingByRoom,
   onSelect,
 }: RoomListProps) {
+  const { t } = useI18n()
+  const format = useFormatters()
   return (
     <ul className="flex flex-col gap-0.5 p-2">
       {rooms.map((room) => {
@@ -32,7 +34,7 @@ export function RoomList({
         const active = room.id === activeRoomId
         const other =
           room.type === "direct" ? room.members.find((m) => m.id !== currentUserId) : undefined
-        const typing = formatTyping(typingByRoom[room.id] ?? [], room.type === "direct")
+        const typing = format.typing(typingByRoom[room.id] ?? [], room.type === "direct")
         return (
           <li key={room.id}>
             <button
@@ -51,17 +53,19 @@ export function RoomList({
                     {title}
                   </span>
                   <span className="ml-auto shrink-0 text-xs text-muted-foreground">
-                    {formatRelative(room.lastMessageAt ?? room.createdAt)}
+                    {format.relative(room.lastMessageAt ?? room.createdAt)}
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
                   {typing ? (
                     <span className="truncate text-xs text-primary italic">
-                      {room.type === "direct" ? "écrit…" : typing}
+                      {room.type === "direct" ? t("typing.short") : typing}
                     </span>
                   ) : (
                     <span className="truncate text-xs text-muted-foreground">
-                      {room.type === "group" ? `${room.members.length} membres` : other?.email}
+                      {room.type === "group"
+                        ? t("room.members", { count: room.members.length })
+                        : other?.email}
                     </span>
                   )}
                   {count > 0 && (
