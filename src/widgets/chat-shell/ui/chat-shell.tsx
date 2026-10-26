@@ -35,7 +35,7 @@ type SidePanel = "rooms" | "create" | "settings"
 export function ChatShell({ user, onUserChange, onLogout, onSessionExpired }: ChatShellProps) {
   const { t } = useI18n()
   const format = useFormatters()
-  const { state, selectRoom, loadOlder, send, sendVoice, retry, addRoom, notifyTyping } = useChat(
+  const { state, selectRoom, loadOlder, send, sendVoice, sendMedia, retry, addRoom, notifyTyping } = useChat(
     user.id,
     onSessionExpired,
   )
@@ -195,6 +195,7 @@ export function ChatShell({ user, onUserChange, onLogout, onSessionExpired }: Ch
               key={activeRoom.id}
               onSend={(body) => send(activeRoom.id, body)}
               onSendVoice={(recording) => sendVoice(activeRoom.id, recording)}
+              onSendMedia={(file) => sendMedia(activeRoom.id, file)}
               onTyping={(typing) => notifyTyping(activeRoom.id, typing)}
             />
           </>

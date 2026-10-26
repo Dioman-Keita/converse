@@ -1,4 +1,5 @@
 export type { ChatMessage, Message, MessageId } from "./model/types"
-export { fetchMessages, postMessage, postVoice } from "./api/messages"
+export { fetchMessages, postMessage, postVoice, uploadMedia } from "./api/messages"
 export { VoicePlayer, formatDuration } from "./ui/voice-player"
+export { MediaAttachment } from "./ui/media-attachment"
 export type { MessagePage } from "./api/messages"

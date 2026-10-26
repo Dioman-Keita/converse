@@ -76,7 +76,10 @@ export const roomMembers = pgTable(
   ],
 )
 
-export const messageKind = pgEnum("message_kind", ["text", "voice"])
+export const messageKind = pgEnum("message_kind", ["text", "voice", "image", "video"])
+
+// Videos are converted after upload; images and voice notes are ready at once.
+export const mediaStatus = pgEnum("media_status", ["processing", "ready", "failed"])
 
 export const messages = pgTable(
   "messages",
@@ -91,9 +94,14 @@ export const messages = pgTable(
     kind: messageKind("kind").notNull().default("text"),
     // Empty for voice messages.
     body: text("body").notNull(),
-    // Voice: file path relative to UPLOADS_DIR (served by /api/media/:messageId) and length.
+    // Media (voice, image, video): file path relative to UPLOADS_DIR, served by
+    // /api/media/:messageId; videos also have a poster frame.
     mediaPath: text("media_path"),
     mediaDurationMs: integer("media_duration_ms"),
+    mediaWidth: integer("media_width"),
+    mediaHeight: integer("media_height"),
+    mediaPosterPath: text("media_poster_path"),
+    mediaStatus: mediaStatus("media_status"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

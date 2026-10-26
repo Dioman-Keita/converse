@@ -1,6 +1,7 @@
 import { AlertCircle, Clock } from "lucide-react"
+import { useState } from "react"
 
-import { VoicePlayer } from "@/entities/message"
+import { MediaAttachment, VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import type { Room } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
@@ -9,6 +10,7 @@ import { Button } from "@/shared/ui"
 
 import type { RoomHistory } from "../model/chat-state"
 import { isSameDay, useFormatters } from "../lib/format"
+import { Lightbox } from "./lightbox"
 
 type MessageListProps = {
   room: Room
@@ -34,6 +36,7 @@ export function MessageList({
 }: MessageListProps) {
   const { t } = useI18n()
   const format = useFormatters()
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null)
   if (!history || (history.status === "loading" && !history.items.length)) {
     return <Centered>{t("messages.loading")}</Centered>
   }
@@ -82,6 +85,19 @@ export function MessageList({
                   newGroup && "mt-1.5",
                 )}
               >
+                {message.kind === "image" || message.kind === "video" ? (
+                  <div
+                    className={cn(
+                      "max-w-full rounded-xl",
+                      message.status === "failed" && "opacity-60 ring-2 ring-destructive/60",
+                    )}
+                  >
+                    <MediaAttachment
+                      message={message}
+                      onOpenImage={(src, alt) => setLightbox({ src, alt })}
+                    />
+                  </div>
+                ) : (
                 <div
                   className={cn(
                     "rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap",
@@ -100,6 +116,7 @@ export function MessageList({
                     message.body
                   )}
                 </div>
+                )}
                 <span className="mt-0.5 flex items-center gap-1 px-1 text-[0.7rem] text-muted-foreground">
                   {message.status === "pending" && <Clock className="size-3" aria-label={t("messages.sending")} />}
                   {message.status === "failed" ? (
@@ -135,6 +152,7 @@ export function MessageList({
           </li>
         )}
       </ol>
+      {lightbox && <Lightbox {...lightbox} onClose={() => setLightbox(null)} />}
     </div>
   )
 }

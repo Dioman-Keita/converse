@@ -35,6 +35,14 @@ const en = {
   voiceUnreadable: "Unreadable audio file",
   voiceTooShort: "Voice message too short",
   voiceTooLong: "A voice message can't be longer than 5 minutes",
+  mediaUnavailable: "Voice and video messages are not available on this server",
+  mediaUnsupportedFormat: "Only photos and videos can be sent",
+  mediaEmpty: "Empty file",
+  imageTooLarge: "Photo too large (25 MB max)",
+  imageUnreadable: "Unreadable or unsupported photo",
+  videoTooLarge: "Video too large (95 MB max)",
+  videoTooLong: "A video can't be longer than 5 minutes",
+  videoUnreadable: "Unreadable or unsupported video",
 }
 
 export type MessageKey = keyof typeof en
@@ -61,6 +69,14 @@ const fr: Record<MessageKey, string> = {
   voiceUnreadable: "Fichier audio illisible",
   voiceTooShort: "Message vocal trop court",
   voiceTooLong: "Un message vocal ne peut pas dépasser 5 minutes",
+  mediaUnavailable: "Les messages vocaux et les vidéos ne sont pas disponibles sur ce serveur",
+  mediaUnsupportedFormat: "Seules les photos et les vidéos peuvent être envoyées",
+  mediaEmpty: "Fichier vide",
+  imageTooLarge: "Photo trop volumineuse (25 Mo maximum)",
+  imageUnreadable: "Photo illisible ou format non pris en charge",
+  videoTooLarge: "Vidéo trop volumineuse (95 Mo maximum)",
+  videoTooLong: "Une vidéo ne peut pas dépasser 5 minutes",
+  videoUnreadable: "Vidéo illisible ou format non pris en charge",
 }
 
 const messages: Record<Locale, Record<MessageKey, string>> = { en, fr }

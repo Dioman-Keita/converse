@@ -1,4 +1,4 @@
-import { Mic, SendHorizontal, Trash2 } from "lucide-react"
+import { ImagePlus, Mic, SendHorizontal, Trash2 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent, KeyboardEvent } from "react"
 
@@ -9,6 +9,9 @@ import { useI18n } from "@/shared/i18n"
 import { Button } from "@/shared/ui"
 
 const MAX_LENGTH = 4000
+// Must match the server limits (server/utils/images.ts, videos.ts).
+const MAX_IMAGE_MB = 25
+const MAX_VIDEO_MB = 95
 const MAX_VOICE_MS = 5 * 60 * 1000
 // Below this, a tap on the mic is treated as accidental and discarded.
 const MIN_VOICE_MS = 500
@@ -17,6 +20,8 @@ type MessageComposerProps = {
   onSend: (body: string) => void
   /** Voice notes are offered only when provided and the browser can record. */
   onSendVoice?: (recording: Recording) => void
+  /** Photos and videos are offered only when provided. */
+  onSendMedia?: (file: File) => void
   /** Called on every edit: true while there is text in the box, false once it's emptied. */
   onTyping?: (typing: boolean) => void
   disabled?: boolean
@@ -26,7 +31,13 @@ type MessageComposerProps = {
  * Enter sends, Shift+Enter adds a new line.
  * With an empty box the send button becomes a microphone: tap to record, then send or discard.
  */
-export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: MessageComposerProps) {
+export function MessageComposer({
+  onSend,
+  onSendVoice,
+  onSendMedia,
+  onTyping,
+  disabled,
+}: MessageComposerProps) {
   const { t } = useI18n()
   const [value, setValue] = useState("")
   const textarea = useRef<HTMLTextAreaElement>(null)
@@ -36,6 +47,28 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
     if (recording && recording.durationMs >= MIN_VOICE_MS) onSendVoice?.(recording)
   }
   const recorder = useVoiceRecorder({ maxMs: MAX_VOICE_MS, onAutoStop: sendRecording })
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [mediaError, setMediaError] = useState<string>()
+
+  // Checked here too so nobody uploads 95 MB just to be told it's too big.
+  function pickFiles(files: FileList | null) {
+    if (!files || !onSendMedia) return
+    setMediaError(undefined)
+    for (const file of files) {
+      const isVideo = file.type.startsWith("video/")
+      const isImage = file.type.startsWith("image/") && file.type !== "image/svg+xml"
+      if (!isVideo && !isImage) {
+        setMediaError(t("media.unsupported", { name: file.name }))
+        continue
+      }
+      const maxMb = isVideo ? MAX_VIDEO_MB : MAX_IMAGE_MB
+      if (file.size > maxMb * 1024 * 1024) {
+        setMediaError(t("media.tooLarge", { name: file.name, max: maxMb }))
+        continue
+      }
+      onSendMedia(file)
+    }
+  }
   const { state } = recorder
 
   function handleChange(next: string) {
@@ -99,6 +132,14 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
       onSubmit={submit}
       className="flex flex-col gap-2 border-t border-border/60 bg-background/80 p-3 backdrop-blur-sm"
     >
+      {mediaError && (
+        <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
+          {mediaError}
+          <button type="button" className="underline" onClick={() => setMediaError(undefined)}>
+            {t("common.ok")}
+          </button>
+        </p>
+      )}
       {state.status === "error" && (
         <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
           {t(state.message)}
@@ -108,6 +149,31 @@ export function MessageComposer({ onSend, onSendVoice, onTyping, disabled }: Mes
         </p>
       )}
       <div className="flex items-end gap-2">
+        {onSendMedia && (
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              hidden
+              onChange={(e) => {
+                pickFiles(e.target.files)
+                e.target.value = ""
+              }}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              aria-label={t("composer.attach")}
+              disabled={disabled}
+              onClick={() => fileInput.current?.click()}
+            >
+              <ImagePlus />
+            </Button>
+          </>
+        )}
         <textarea
           ref={textarea}
           value={value}
