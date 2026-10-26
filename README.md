@@ -34,13 +34,14 @@ Browser (iOS, Android, desktop)
 2. [Run the server](#run-the-server)
 3. [Make the app reachable from the Internet](#make-the-app-reachable-from-the-internet)
 4. [Get a permanent URL](#get-a-permanent-url)
-5. [Using the app](#using-the-app)
-6. [Day-to-day operations](#day-to-day-operations)
-7. [Backups and restore](#backups-and-restore)
-8. [Development](#development)
-9. [Troubleshooting](#troubleshooting)
-10. [Known limitations](#known-limitations)
-11. [License](#license)
+5. [Android app](#android-app)
+6. [Using the app](#using-the-app)
+7. [Day-to-day operations](#day-to-day-operations)
+8. [Backups and restore](#backups-and-restore)
+9. [Development](#development)
+10. [Troubleshooting](#troubleshooting)
+11. [Known limitations](#known-limitations)
+12. [License](#license)
 
 ---
 
@@ -88,15 +89,21 @@ docker compose ps
 
 ### Quick option: Quick Tunnel (no account, no domain)
 
-```bash
-docker compose --profile quick-tunnel up -d
+Use the start script: it starts everything, waits for the tunnel and **prints the public address** in the terminal.
+
+Windows (PowerShell):
+
+```powershell
+.\start.ps1
 ```
 
-Get the public address:
+Linux / macOS / Git Bash:
 
 ```bash
-docker compose logs quick-tunnel | grep trycloudflare.com
+./start.sh
 ```
+
+Add `-Build` (PowerShell) or `--build` (shell) after a `git pull` to rebuild the app. The server also prints the address in its logs every time it changes (`docker compose logs app`).
 
 You get an address like `https://random-words.trycloudflare.com`: that's the one to share. It works over HTTPS, on mobile data as well as Wi-Fi, with nothing to configure on your router.
 
@@ -144,6 +151,26 @@ ngrok offers a free static domain, but on the free plan **every visitor first se
 
 ---
 
+## Android app
+
+Download `converse-x.y.z.apk` from the [releases](https://github.com/Dioman-Keita/converse/releases) on your phone and open it (Android 8+; allow installing apps from your browser when asked).
+
+Every time it opens, the app asks for the **server address**: paste the one printed by the start script (the last one is pre-filled, and **Paste** takes it from the clipboard, even from a whole copied terminal line). It checks that a Converse server answers there, then opens the chat. Everything works as in the browser: voice messages (it asks for the microphone once), photos, videos, documents (saved to *Downloads*), language, settings.
+
+Each Quick Tunnel address is a different site, so you sign in again after the server restarted with a new address. A permanent address ([named tunnel](#get-a-permanent-url)) avoids it.
+
+**New version**: push a tag such as `android-v0.2.0`; GitHub Actions builds a signed APK and attaches it to a release. Installed apps update in place because every release is signed with the same key (repository secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`). Keep a safe copy of that key: if it's lost, people must uninstall the app before installing a newer one.
+
+The app lives in `mobile/`: a small React Native (Expo) shell — the address screen, then a WebView showing the server's own web app, so the interface is always the server's current version and nothing has to be rebuilt when the web app changes. `npx expo prebuild` generates the native Android project at build time (it isn't committed).
+
+Build locally with only Docker (Node, the Android SDK and Gradle are cached in Docker volumes; the APK lands in `mobile/dist/`, debug-signed unless the `ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` variables point to the release key):
+
+```bash
+docker run --rm -v "$PWD/mobile:/project" -v converse-android-sdk:/sdk -v converse-android-gradle:/root/.gradle -v converse-node:/opt/node -v converse-npm:/root/.npm -e VERSION_NAME=0.1.0 eclipse-temurin:17-jdk bash /project/scripts/build-apk-in-docker.sh
+```
+
+---
+
 ## Using the app
 
 1. Open the address (local or public) and click **Create account**.
@@ -169,8 +196,8 @@ Good to know:
 
 | Action | Command |
 | --- | --- |
-| Start (with Quick Tunnel) | `docker compose --profile quick-tunnel up -d` |
-| Show the public address | `docker compose logs quick-tunnel \| grep trycloudflare.com` |
+| Start (with Quick Tunnel) and print the address | `.\start.ps1` (Windows) or `./start.sh` |
+| Show the public address again | `docker compose logs app \| grep trycloudflare.com` |
 | Service status | `docker compose ps` |
 | Server logs | `docker compose logs -f app` |
 | Stop (data is kept) | `docker compose --profile quick-tunnel down` |

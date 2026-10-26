@@ -32,6 +32,8 @@ services:
     environment:
       DATABASE_URL: postgres://converse:${DB_PASSWORD}@db:5432/converse
       PORT: 3000
+      # Lets the app log the Quick Tunnel's public address (server/plugins/public-url.ts).
+      QUICK_TUNNEL_METRICS_URL: http://quick-tunnel:20241
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
@@ -74,7 +76,8 @@ services:
     image: cloudflare/cloudflared:latest
     restart: unless-stopped
     profiles: ["quick-tunnel"]
-    command: tunnel --no-autoupdate --url http://app:3000
+    # Metrics server: /quicktunnel returns the assigned hostname, which the app logs.
+    command: tunnel --no-autoupdate --metrics 0.0.0.0:20241 --url http://app:3000
     depends_on:
       - app
 
