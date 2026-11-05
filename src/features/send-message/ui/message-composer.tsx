@@ -1,4 +1,5 @@
 import { ImagePlus, Mic, Paperclip, SendHorizontal, Trash2 } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent, KeyboardEvent } from "react"
 
@@ -6,6 +7,7 @@ import { formatDuration } from "@/entities/message"
 import { canRecordVoice, useVoiceRecorder } from "@/shared/lib/use-voice-recorder"
 import type { Recording } from "@/shared/lib/use-voice-recorder"
 import { useI18n } from "@/shared/i18n"
+import { springs } from "@/shared/lib/motion"
 import { Button } from "@/shared/ui"
 
 const MAX_LENGTH = 4000
@@ -33,6 +35,7 @@ type MessageComposerProps = {
 /**
  * Enter sends, Shift+Enter adds a new line.
  * With an empty box the send button becomes a microphone: tap to record, then send or discard.
+ * Looks like a lined scrap of paper at the foot of the page; the send/mic sticker swaps with a flick.
  */
 export function MessageComposer({
   onSend,
@@ -111,7 +114,7 @@ export function MessageComposer({
 
   if (state.status === "recording" || state.status === "starting") {
     return (
-      <div className="flex items-center gap-2 border-t border-border/60 bg-background/80 p-3 backdrop-blur-sm">
+      <div className="relative z-10 flex items-center gap-2 px-3 pt-2 pb-3 sm:px-5">
         <Button
           type="button"
           variant="ghost"
@@ -121,10 +124,10 @@ export function MessageComposer({
         >
           <Trash2 />
         </Button>
-        <div className="flex min-h-9 flex-1 items-center gap-2 rounded-lg border border-input px-3 text-sm dark:bg-input/30">
-          <span className="size-2.5 animate-pulse rounded-full bg-red-500" aria-hidden />
+        <div className="note flex min-h-11 flex-1 items-center gap-2.5 px-4 text-base">
+          <span className="size-3 animate-pulse rounded-full border-[1.5px] border-ink bg-error-ink" aria-hidden />
           {state.status === "starting" ? (
-            <span className="text-muted-foreground">{t("composer.micStarting")}</span>
+            <span className="text-ink-soft">{t("composer.micStarting")}</span>
           ) : (
             <RecordingTimer startedAt={state.startedAt} />
           )}
@@ -132,6 +135,7 @@ export function MessageComposer({
         <Button
           type="button"
           size="icon"
+          variant="pink"
           aria-label={t("composer.sendVoice")}
           disabled={state.status !== "recording"}
           onClick={() => void recorder.stop().then(sendRecording)}
@@ -147,10 +151,10 @@ export function MessageComposer({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-col gap-2 border-t border-border/60 bg-background/80 p-3 backdrop-blur-sm"
+      className="relative z-10 flex flex-col gap-1.5 px-3 pt-2 pb-3 sm:px-5"
     >
       {mediaError && (
-        <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
+        <p role="alert" className="m-0 flex items-center gap-2 px-1 text-sm text-error-ink">
           {mediaError}
           <button type="button" className="underline" onClick={() => setMediaError(undefined)}>
             {t("common.ok")}
@@ -158,14 +162,14 @@ export function MessageComposer({
         </p>
       )}
       {state.status === "error" && (
-        <p role="alert" className="flex items-center gap-2 text-xs text-destructive">
+        <p role="alert" className="m-0 flex items-center gap-2 px-1 text-sm text-error-ink">
           {t(state.message)}
           <button type="button" className="underline" onClick={recorder.dismissError}>
             {t("common.ok")}
           </button>
         </p>
       )}
-      <div className="flex items-end gap-1">
+      <div className="note flex items-end gap-1 py-1.5 pr-1.5 pl-1">
         {onSendFile && (
           <>
             <input
@@ -224,24 +228,35 @@ export function MessageComposer({
           rows={1}
           placeholder={t("composer.placeholder")}
           aria-label={t("composer.messageLabel")}
-          className="field-sizing-content max-h-40 min-h-9 flex-1 resize-none rounded-lg border border-input bg-transparent px-3 py-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30"
+          className="hand-lines field-sizing-content max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 pt-1.5 pb-0.5 text-base text-ink outline-none placeholder:text-ink-soft/70 focus-visible:outline-none"
         />
-        {showMic ? (
-          <Button
-            type="button"
-            size="icon"
-            variant="secondary"
-            aria-label={t("composer.record")}
-            disabled={disabled}
-            onClick={() => void recorder.start()}
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={showMic ? "mic" : "send"}
+            className="flex"
+            initial={{ scale: 0, rotate: -45 }}
+            animate={{ scale: 1, rotate: 0 }}
+            exit={{ scale: 0, rotate: 45 }}
+            transition={springs.pop}
           >
-            <Mic />
-          </Button>
-        ) : (
-          <Button type="submit" size="icon" disabled={disabled || !value.trim()} aria-label={t("composer.send")}>
-            <SendHorizontal />
-          </Button>
-        )}
+            {showMic ? (
+              <Button
+                type="button"
+                size="icon"
+                variant="pink"
+                aria-label={t("composer.record")}
+                disabled={disabled}
+                onClick={() => void recorder.start()}
+              >
+                <Mic />
+              </Button>
+            ) : (
+              <Button type="submit" size="icon" disabled={disabled || !value.trim()} aria-label={t("composer.send")}>
+                <SendHorizontal />
+              </Button>
+            )}
+          </motion.span>
+        </AnimatePresence>
       </div>
     </form>
   )
@@ -256,7 +271,7 @@ function RecordingTimer({ startedAt }: { startedAt: number }) {
   return (
     <span className="tabular-nums" aria-live="off">
       {formatDuration(now - startedAt)}
-      <span className="text-muted-foreground"> / {formatDuration(MAX_VOICE_MS)}</span>
+      <span className="text-ink-soft"> / {formatDuration(MAX_VOICE_MS)}</span>
     </span>
   )
 }

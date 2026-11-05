@@ -15,7 +15,7 @@ export function formatDuration(ms: number): string {
 type VoicePlayerProps = {
   src: string
   durationMs: number
-  /** Colors adapted to the bubble (own messages sit on the primary color). */
+  /** Own notes play with a pink sticker, the others' with a blue one. */
   mine?: boolean
 }
 
@@ -57,7 +57,7 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
   const progress = durationMs > 0 ? Math.min(1, position / durationMs) : 0
 
   return (
-    <div className="flex w-56 max-w-full items-center gap-2.5 py-0.5">
+    <div className="flex w-56 max-w-full items-center gap-3 py-1">
       <audio
         ref={audio}
         src={src}
@@ -75,11 +75,9 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
         onClick={toggle}
         aria-label={isPlaying ? t("voice.pause") : t("voice.play")}
         className={cn(
-          "relative flex size-8 shrink-0 items-center justify-center rounded-full",
-          "transition-[background-color,transform] duration-150 active:scale-90 motion-reduce:transition-none",
-          mine
-            ? "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
-            : "bg-foreground/10 text-foreground hover:bg-foreground/20",
+          "sticker relative flex size-9 shrink-0 items-center justify-center rounded-full text-ink",
+          "transition-[rotate,scale] duration-150 hover:-rotate-12 active:scale-90 motion-reduce:transition-none",
+          mine ? "bg-pink-wash" : "bg-blue-wash",
         )}
       >
         {/* Soft pulse around the button while the note plays. */}
@@ -87,8 +85,8 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
           <span
             aria-hidden
             className={cn(
-              "absolute inset-0 animate-ping rounded-full opacity-30 motion-reduce:hidden",
-              mine ? "bg-primary-foreground" : "bg-foreground",
+              "absolute inset-0 animate-ping rounded-full opacity-40 motion-reduce:hidden",
+              mine ? "bg-pink" : "bg-blue",
             )}
             style={{ animationDuration: "1.6s" }}
           />
@@ -126,25 +124,14 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
             if (e.key === "ArrowRight") seek(Math.min(1, progress + step))
             if (e.key === "ArrowLeft") seek(Math.max(0, progress - step))
           }}
-          className={cn(
-            "relative h-1.5 cursor-pointer rounded-full",
-            mine ? "bg-primary-foreground/25" : "bg-foreground/15",
-          )}
+          className="relative h-2 cursor-pointer rounded-full bg-ink/15"
         >
           <div
-            className={cn(
-              "absolute inset-y-0 left-0 rounded-full",
-              mine ? "bg-primary-foreground" : "bg-foreground/70",
-            )}
+            className={cn("absolute inset-y-0 left-0 rounded-full", mine ? "bg-pink-ink" : "bg-ink/70")}
             style={{ width: `${progress * 100}%` }}
           />
         </div>
-        <span
-          className={cn(
-            "text-[0.7rem] tabular-nums",
-            mine ? "text-primary-foreground/80" : "text-muted-foreground",
-          )}
-        >
+        <span className="text-xs text-ink-soft tabular-nums">
           {formatDuration(isPlaying || position > 0 ? position : durationMs)}
         </span>
       </div>
