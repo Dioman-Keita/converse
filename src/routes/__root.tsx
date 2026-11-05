@@ -16,6 +16,10 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
+        name: "theme-color",
+        content: "#1b222d",
+      },
+      {
         title: "Converse",
       },
     ],
@@ -31,11 +35,11 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr">
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-svh bg-background text-foreground antialiased">
+      <body className="min-h-svh bg-desk text-ink antialiased">
         <AppProviders>{children}</AppProviders>
         <TanStackDevtools
           config={{

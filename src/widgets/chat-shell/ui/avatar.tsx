@@ -1,15 +1,13 @@
+import { motion } from "motion/react"
+
 import { initials } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
+import { springs } from "@/shared/lib/motion"
+import { pick } from "@/shared/lib/seeded"
 import { cn } from "@/shared/lib/utils"
+import { WATERCOLORS } from "@/shared/lib/watercolor"
 
-const HUES = [280, 250, 200, 160, 30, 340]
-
-function hue(seed: string): number {
-  let h = 0
-  for (const c of seed) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return HUES[h % HUES.length]
-}
-
+/** A watercolor dab circled in ink, with the initials written by hand. */
 export function Avatar({
   name,
   seed,
@@ -19,7 +17,7 @@ export function Avatar({
   name: string
   seed: string
   className?: string
-  /** Shows a green presence dot when true; nothing when false/undefined. */
+  /** Shows a green sticker when true; nothing when false/undefined. */
   online?: boolean
 }) {
   const { t } = useI18n()
@@ -27,18 +25,29 @@ export function Avatar({
     <span className="relative shrink-0">
       <span
         aria-hidden
-        className={cn(
-          "flex size-9 items-center justify-center rounded-full text-xs font-semibold text-white",
-          className,
-        )}
-        style={{ background: `oklch(0.5 0.13 ${hue(seed)})` }}
+        className={cn("relative flex size-10 items-center justify-center font-title text-base text-ink", className)}
       >
-        {initials(name)}
+        <svg viewBox="0 0 40 40" className="absolute inset-0 size-full overflow-visible">
+          <circle
+            cx="20"
+            cy="20"
+            r="17.5"
+            fill={pick(seed, WATERCOLORS)}
+            fillOpacity="0.7"
+            stroke="var(--ink)"
+            strokeWidth="2"
+            filter="url(#rough)"
+          />
+        </svg>
+        <span className="relative leading-none">{initials(name)}</span>
       </span>
       {online && (
-        <span
+        <motion.span
           aria-label={t("presence.online")}
-          className="absolute right-0 bottom-0 size-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+          className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-ink bg-green"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={springs.pop}
         />
       )}
     </span>

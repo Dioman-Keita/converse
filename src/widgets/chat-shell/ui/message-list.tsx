@@ -1,16 +1,18 @@
-import { AlertCircle, Clock } from "lucide-react"
+import { AnimatePresence } from "motion/react"
 import { useState } from "react"
+import type { ReactNode } from "react"
 
-import { FileAttachment, MediaAttachment, VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import type { Room } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
-import { cn } from "@/shared/lib/utils"
-import { Button } from "@/shared/ui"
+import { tiltFor } from "@/shared/lib/seeded"
+import { Button, Star, TornLabel } from "@/shared/ui"
 
 import type { RoomHistory } from "../model/chat-state"
 import { isSameDay, useFormatters } from "../lib/format"
 import { Lightbox } from "./lightbox"
+import { MessageItem } from "./message-item"
+import { TypingScribble } from "./typing-scribble"
 
 type MessageListProps = {
   room: Room
@@ -18,13 +20,16 @@ type MessageListProps = {
   currentUserId: string
   onLoadOlder: () => void
   onRetry: (message: ChatMessage) => void
-  /** "Awa est en train d’écrire…" — shown as a bubble after the last message. */
+  /** "Awa est en train d’écrire…" — shown as a note after the last message. */
   typingLabel?: string
 }
 
 /**
  * Uses `flex-col-reverse` so the browser keeps the view pinned to the newest
  * message, and prepending older pages doesn't make the content jump.
+ *
+ * `AnimatePresence initial={false}`: the history already there when the page opens
+ * appears at rest; only messages arriving afterwards are laid down with a gesture.
  */
 export function MessageList({
   room,
@@ -44,132 +49,81 @@ export function MessageList({
     return <Centered>{t("messages.failed")}</Centered>
   }
   if (!history.items.length && !typingLabel) {
-    return <Centered>{t("messages.empty")}</Centered>
+    return (
+      <Centered>
+        <Star size={34} className="mx-auto mb-2" />
+        {t("messages.empty")}
+      </Centered>
+    )
   }
 
   const names = new Map(room.members.map((m) => [m.id, m.name]))
   const items = history.items
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col-reverse overflow-y-auto px-3 py-4 sm:px-6">
-      <ol className="flex flex-col gap-0.5">
-        {history.nextCursor && (
-          <li className="mb-3 flex justify-center">
-            <Button variant="ghost" size="sm" onClick={onLoadOlder} disabled={history.loadingOlder}>
-              {history.loadingOlder ? t("messages.loadingOlder") : t("messages.loadOlder")}
-            </Button>
-          </li>
-        )}
-
-        {items.map((message, i) => {
-          const prev: ChatMessage | undefined = i > 0 ? items[i - 1] : undefined
-          const mine = message.authorId === currentUserId
-          const newDay = !prev || !isSameDay(prev.createdAt, message.createdAt)
-          const newGroup = newDay || prev.authorId !== message.authorId
-          return (
-            <li key={message.clientId ?? message.id} className="flex flex-col">
-              {newDay && (
-                <p className="my-3 self-center rounded-full bg-muted/60 px-3 py-0.5 text-xs text-muted-foreground">
-                  {format.day(message.createdAt)}
-                </p>
-              )}
-              {newGroup && !mine && room.type === "group" && (
-                <p className="mt-2 mb-0.5 px-1 text-xs font-medium text-muted-foreground">
-                  {names.get(message.authorId) ?? t("messages.formerMember")}
-                </p>
-              )}
-              <div
-                className={cn(
-                  "group flex max-w-[85%] flex-col sm:max-w-[70%]",
-                  mine ? "items-end self-end" : "items-start self-start",
-                  newGroup && "mt-1.5",
-                )}
-              >
-                {message.kind === "file" ? (
-                  <div
-                    className={cn(
-                      "max-w-full rounded-2xl",
-                      message.status === "failed" && "opacity-60 ring-2 ring-destructive/60",
-                    )}
-                  >
-                    <FileAttachment message={message} mine={mine && message.status !== "failed"} />
-                  </div>
-                ) : message.kind === "image" || message.kind === "video" ? (
-                  <div
-                    className={cn(
-                      "max-w-full rounded-xl",
-                      message.status === "failed" && "opacity-60 ring-2 ring-destructive/60",
-                    )}
-                  >
-                    <MediaAttachment
-                      message={message}
-                      onOpenImage={(src, alt) => setLightbox({ src, alt })}
-                    />
-                  </div>
-                ) : (
-                <div
-                  className={cn(
-                    "rounded-2xl px-3 py-1.5 text-sm break-words whitespace-pre-wrap",
-                    mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
-                    message.status === "pending" && "opacity-70",
-                    message.status === "failed" && "bg-destructive/15 text-foreground ring-1 ring-destructive/50",
-                  )}
-                >
-                  {message.kind === "voice" && message.voice ? (
-                    <VoicePlayer
-                      src={message.voice.url}
-                      durationMs={message.voice.durationMs}
-                      mine={mine && message.status !== "failed"}
-                    />
-                  ) : (
-                    message.body
-                  )}
-                </div>
-                )}
-                <span className="mt-0.5 flex items-center gap-1 px-1 text-[0.7rem] text-muted-foreground">
-                  {message.status === "pending" && <Clock className="size-3" aria-label={t("messages.sending")} />}
-                  {message.status === "failed" ? (
-                    <button
-                      type="button"
-                      onClick={() => onRetry(message)}
-                      className="flex items-center gap-1 text-destructive hover:underline"
-                    >
-                      <AlertCircle className="size-3" />
-                      {t("messages.failedRetry")}
-                    </button>
-                  ) : (
-                    format.time(message.createdAt)
-                  )}
-                </span>
-              </div>
+    <div className="relative flex min-h-0 flex-1 flex-col-reverse overflow-x-hidden overflow-y-auto px-4 py-4 sm:px-8">
+      <ol className="flex flex-col gap-1">
+        <AnimatePresence initial={false}>
+          {history.nextCursor && (
+            <li key="load-older" className="mb-3 flex justify-center">
+              <Button variant="link" size="sm" onClick={onLoadOlder} disabled={history.loadingOlder}>
+                {history.loadingOlder ? t("messages.loadingOlder") : t("messages.loadOlder")}
+              </Button>
             </li>
-          )
-        })}
+          )}
 
-        {typingLabel && (
-          <li className="mt-2 flex items-center gap-2 self-start" aria-live="polite">
-            <span className="flex items-center gap-1 rounded-2xl bg-muted px-3 py-2.5" aria-hidden>
-              {[0, 150, 300].map((delay) => (
-                <span
-                  key={delay}
-                  className="size-1.5 animate-bounce rounded-full bg-muted-foreground"
-                  style={{ animationDelay: `${delay}ms` }}
+          {items.map((message, i) => {
+            const prev: ChatMessage | undefined = i > 0 ? items[i - 1] : undefined
+            const mine = message.authorId === currentUserId
+            const newDay = !prev || !isSameDay(prev.createdAt, message.createdAt)
+            const newGroup = newDay || prev.authorId !== message.authorId
+            const day = format.day(message.createdAt)
+            return (
+              <li key={message.clientId ?? message.id} className="flex flex-col">
+                {newDay && (
+                  <TornLabel
+                    tilt={tiltFor(day, 2.5)}
+                    className="my-4 self-center"
+                    paperClassName="px-5 pt-1.5 pb-2 font-title text-lg"
+                  >
+                    {day}
+                  </TornLabel>
+                )}
+                {newGroup && !mine && room.type === "group" && (
+                  <p className="mt-2 mb-0 px-1.5 font-title text-lg leading-tight text-pink-ink">
+                    {names.get(message.authorId) ?? t("messages.formerMember")}
+                  </p>
+                )}
+                <MessageItem
+                  message={message}
+                  mine={mine}
+                  newGroup={newGroup}
+                  onRetry={onRetry}
+                  onOpenImage={(src, alt) => setLightbox({ src, alt })}
                 />
-              ))}
-            </span>
-            <span className="text-xs text-muted-foreground italic">{typingLabel}</span>
-          </li>
-        )}
+              </li>
+            )
+          })}
+
+          {typingLabel && (
+            <li key="typing" className="mt-2 flex items-center gap-2 self-start" aria-live="polite">
+              <TypingScribble />
+              <span className="text-sm text-ink-soft italic">{typingLabel}</span>
+            </li>
+          )}
+        </AnimatePresence>
       </ol>
-      {lightbox && <Lightbox {...lightbox} onClose={() => setLightbox(null)} />}
+      <AnimatePresence>
+        {lightbox && <Lightbox key="lightbox" {...lightbox} onClose={() => setLightbox(null)} />}
+      </AnimatePresence>
     </div>
   )
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
+function Centered({ children }: { children: ReactNode }) {
   return (
-    <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted-foreground">
-      {children}
+    <div className="flex flex-1 items-center justify-center p-6 text-center">
+      <p className="m-0 max-w-xs -rotate-1 text-xl text-ink-soft">{children}</p>
     </div>
   )
 }

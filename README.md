@@ -11,6 +11,9 @@
 - Public access **without touching your router**, through an outbound Cloudflare Tunnel.
 
 Technical details (REST API, WebSocket protocol, design decisions): [ARCHITECTURE.md](ARCHITECTURE.md).
+Visual design (art direction, design system, motion): [docs/design/](docs/design/README.md).
+
+![Converse: a conversation in the correspondence notebook](docs/design/screenshots/chat-awa.webp)
 
 ```
 Browser (iOS, Android, desktop)
@@ -384,3 +387,7 @@ The session expired (30 days) or you signed out elsewhere: sign in again.
 ## License
 
 [MIT](LICENSE) © 2026 Dioman Keïta
+
+The interface's hand-made journal style is an unofficial, fan-inspired nod to narrative games such as
+*Life is Strange* (Dontnod / Square Enix). No asset from any game is used: everything is recreated in
+CSS/SVG, and the fonts (Patrick Hand, Gochi Hand) are under the SIL Open Font License.

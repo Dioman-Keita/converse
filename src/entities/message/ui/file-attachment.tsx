@@ -15,6 +15,7 @@ import type { LucideIcon } from "lucide-react"
 import { useI18n } from "@/shared/i18n"
 import { formatBytes } from "@/shared/lib/format-bytes"
 import { cn } from "@/shared/lib/utils"
+import { Tape } from "@/shared/ui"
 
 import type { ChatMessage } from "../model/types"
 
@@ -35,11 +36,11 @@ export function fileIcon(name: string, mime: string): LucideIcon {
 
 type FileAttachmentProps = {
   message: ChatMessage
-  /** Colors adapted to the bubble (own messages sit on the primary color). */
+  /** Own documents are washed in pink, the others' in pale blue. */
   mine: boolean
 }
 
-/** Document card: icon, name, size and a download link (or upload progress). */
+/** Document as an index card taped on the page: icon, name, size and a download link (or upload progress). */
 export function FileAttachment({ message, mine }: FileAttachmentProps) {
   const { t, intlLocale } = useI18n()
   const file = message.file
@@ -51,26 +52,20 @@ export function FileAttachment({ message, mine }: FileAttachmentProps) {
 
   const content = (
     <>
-      <span
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-lg",
-          mine ? "bg-primary-foreground/15" : "bg-background/60",
-        )}
-      >
-        <Icon className="size-5" aria-hidden />
+      <Tape placement="top-right" angle={28} className="h-4 w-12" />
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-hand)] border-2 border-ink/80 bg-paper-light">
+        <Icon className="rough size-5" aria-hidden />
       </span>
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-medium" title={file.name}>
+        <span className="truncate font-title text-lg leading-tight" title={file.name}>
           {file.name}
         </span>
         {percent === undefined ? (
-          <span className={cn("text-xs", mine ? "text-primary-foreground/75" : "text-muted-foreground")}>
-            {size}
-          </span>
+          <span className="text-xs text-ink-soft">{size}</span>
         ) : (
           <span className="mt-1 flex items-center gap-2">
             <span
-              className={cn("h-1 flex-1 overflow-hidden rounded-full", mine ? "bg-primary-foreground/25" : "bg-foreground/15")}
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/15"
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
@@ -78,21 +73,21 @@ export function FileAttachment({ message, mine }: FileAttachmentProps) {
               aria-label={t("file.uploading", { percent })}
             >
               <span
-                className={cn("block h-full rounded-full transition-[width] duration-200", mine ? "bg-primary-foreground" : "bg-foreground/70")}
+                className={cn("block h-full rounded-full transition-[width] duration-200", mine ? "bg-pink" : "bg-blue")}
                 style={{ width: `${percent}%` }}
               />
             </span>
-            <span className="text-[0.7rem] tabular-nums">{percent}%</span>
+            <span className="text-xs tabular-nums">{percent}%</span>
           </span>
         )}
       </span>
-      {percent === undefined && <Download className="size-4 shrink-0 opacity-70" aria-hidden />}
+      {percent === undefined && <Download className="rough size-4 shrink-0 opacity-70" aria-hidden />}
     </>
   )
 
   const className = cn(
-    "flex w-64 max-w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left",
-    mine ? "bg-primary text-primary-foreground" : "bg-muted text-foreground",
+    "note flex w-64 max-w-full items-center gap-3 px-3 py-2.5 text-left",
+    mine ? "note-mine" : "note-theirs",
   )
 
   // Still uploading (or failed before reaching the server): nothing to download yet.
@@ -101,7 +96,7 @@ export function FileAttachment({ message, mine }: FileAttachmentProps) {
     <a
       href={file.url}
       download={file.name}
-      className={cn(className, "transition-opacity hover:opacity-90")}
+      className={cn(className, "transition-[rotate,translate] duration-200 hover:-translate-y-0.5 hover:-rotate-1")}
       aria-label={t("file.download", { name: file.name })}
     >
       {content}

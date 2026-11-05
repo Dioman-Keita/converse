@@ -7,6 +7,7 @@ export const en = {
   "home.subtitle": "Self-hosted instant messaging: your conversations stay with you.",
 
   "auth.tagline": "Realtime messaging",
+  "auth.coverNote": "Private letters… keep out!",
   "auth.signIn": "Sign in",
   "auth.signingIn": "Signing in…",
   "auth.createAccount": "Create account",
@@ -86,6 +87,7 @@ export const en = {
   "bytes.mb": "{n} MB",
   "bytes.gb": "{n} GB",
 
+  "chat.conversations": "Conversations",
   "chat.newConversation": "New conversation",
   "chat.signOut": "Sign out",
   "chat.settings": "Settings",
@@ -93,7 +95,7 @@ export const en = {
   "chat.loadingRooms": "Loading conversations…",
   "chat.roomsFailed": "Couldn't load conversations.",
   "chat.noRooms": "No conversations yet. Start one with the email of someone who has an account.",
-  "chat.selectRoom": "Select a conversation",
+  "chat.selectRoom": "Open a conversation to turn the page…",
   "chat.someone": "Someone",
 
   "status.online": "Online",
@@ -102,7 +104,7 @@ export const en = {
 
   "messages.loading": "Loading messages…",
   "messages.failed": "Couldn't load messages. Check your connection.",
-  "messages.empty": "No messages yet — say hi 👋",
+  "messages.empty": "A blank page… write the first line 👋",
   "messages.loadOlder": "Load older messages",
   "messages.loadingOlder": "Loading…",
   "messages.formerMember": "Former member",
@@ -149,6 +151,7 @@ export const fr: Record<MessageKey, string> = {
   "home.subtitle": "Messagerie instantanée auto-hébergée : vos conversations restent chez vous.",
 
   "auth.tagline": "Messagerie en temps réel",
+  "auth.coverNote": "Lettres privées… ne pas lire !",
   "auth.signIn": "Se connecter",
   "auth.signingIn": "Connexion…",
   "auth.createAccount": "Créer un compte",
@@ -228,6 +231,7 @@ export const fr: Record<MessageKey, string> = {
   "bytes.mb": "{n} Mo",
   "bytes.gb": "{n} Go",
 
+  "chat.conversations": "Conversations",
   "chat.newConversation": "Nouvelle conversation",
   "chat.signOut": "Se déconnecter",
   "chat.settings": "Paramètres",
@@ -236,7 +240,7 @@ export const fr: Record<MessageKey, string> = {
   "chat.roomsFailed": "Impossible de charger les conversations.",
   "chat.noRooms":
     "Aucune conversation pour l’instant. Démarrez-en une avec l’email d’une personne inscrite.",
-  "chat.selectRoom": "Sélectionnez une conversation",
+  "chat.selectRoom": "Ouvrez une conversation pour tourner la page…",
   "chat.someone": "Quelqu’un",
 
   "status.online": "En ligne",
@@ -245,7 +249,7 @@ export const fr: Record<MessageKey, string> = {
 
   "messages.loading": "Chargement des messages…",
   "messages.failed": "Impossible de charger les messages. Vérifiez votre connexion.",
-  "messages.empty": "Aucun message pour l’instant — dites bonjour 👋",
+  "messages.empty": "Page blanche… écrivez la première ligne 👋",
   "messages.loadOlder": "Messages plus anciens",
   "messages.loadingOlder": "Chargement…",
   "messages.formerMember": "Ancien membre",

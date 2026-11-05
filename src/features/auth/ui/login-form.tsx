@@ -19,7 +19,7 @@ import { login } from "../api/auth"
 import { FormError } from "./form-error"
 
 /**
- * Login form — ElevenLabs UI aesthetic (dark surface, tight type, primary CTA).
+ * Login form — a taped scrap of paper on the notebook cover.
  * Calls `POST /api/auth/login`; the server sets the session cookie.
  */
 export function LoginForm() {
@@ -46,16 +46,16 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm border-border/60 bg-card/80 shadow-2xl shadow-black/40 backdrop-blur-sm">
+    <Card tilt={1.2} className="w-full">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-xl tracking-tight">{t("login.title")}</CardTitle>
+        <CardTitle>{t("login.title")}</CardTitle>
         <CardDescription>
           {t("login.subtitle")}
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="flex flex-col gap-5">
+        <CardContent className="flex flex-col gap-4">
           <div className="grid gap-2">
             <Label htmlFor="login-email">{t("field.email")}</Label>
             <Input
@@ -82,15 +82,15 @@ export function LoginForm() {
           <FormError message={error} />
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 border-t-0 bg-transparent">
+        <CardFooter className="flex flex-col gap-3 pt-2">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
             {pending ? t("auth.signingIn") : t("auth.signIn")}
           </Button>
-          <p className="pt-1 text-center text-sm text-muted-foreground">
+          <p className="m-0 text-center text-base text-ink-soft">
             {t("login.noAccount")}{" "}
             <Link
               to="/register"
-              className="font-medium text-foreground underline-offset-4 hover:underline"
+              className="text-ink underline decoration-2 underline-offset-4 hover:decoration-pink"
             >
               {t("login.createOne")}
             </Link>

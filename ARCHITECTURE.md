@@ -26,7 +26,7 @@ src/            # web client — Feature-Sliced Design
   widgets/      # composite UI blocks (chat-shell, …)
   features/     # user actions (auth forms, send-message, start-call)
   entities/     # domain models (user, room, message, call)
-  shared/       # ui kit, lib
+  shared/       # ui kit (shadcn + scrapbook primitives, see docs/design), lib
 routes/         # TanStack file routes — thin adapters only
 server/         # Nitro server (serverDir)
   api/          # REST handlers → /api/*
