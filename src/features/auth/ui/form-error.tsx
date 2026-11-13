@@ -1,22 +1,29 @@
+import { CircleAlert } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 
-import { springs } from "@/shared/lib/motion"
+import { transitions } from "@/shared/lib/motion"
 
-/** An error written in red ink on the page — never a toast. */
+/** Inline error under the fields — never a toast. The height animates so the form doesn't jump. */
 export function FormError({ message }: { message?: string }) {
   return (
-    <AnimatePresence>
+    <AnimatePresence initial={false}>
       {message && (
-        <motion.p
-          role="alert"
-          className="m-0 text-lg text-error-ink"
-          initial={{ opacity: 0, x: -6, rotate: -2 }}
-          animate={{ opacity: 1, x: 0, rotate: 0 }}
-          exit={{ opacity: 0 }}
-          transition={springs.nudge}
+        <motion.div
+          key="error"
+          className="overflow-hidden"
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={transitions.base}
         >
-          ✗ {message}
-        </motion.p>
+          <p
+            role="alert"
+            className="m-0 flex items-start gap-2 rounded-md border border-red/25 bg-red-soft px-3 py-2 text-[13px] text-red"
+          >
+            <CircleAlert className="mt-px size-4 shrink-0" aria-hidden />
+            {message}
+          </p>
+        </motion.div>
       )}
     </AnimatePresence>
   )

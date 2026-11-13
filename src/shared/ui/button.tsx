@@ -5,36 +5,33 @@ import type { VariantProps } from "class-variance-authority"
 import { cn } from "@/shared/lib/utils"
 
 /**
- * Buttons are stickers: inked 2 px border, offset shadow, uneven corners.
- * Icons get the hand-drawn `#rough` wobble.
+ * Primary is light on black (the one call to action on a screen); everything else
+ * is a quiet surface or ghost. Press scales down slightly, nothing more.
  */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap select-none outline-none transition-[rotate,translate,box-shadow,background-color,opacity] duration-150 disabled:pointer-events-none disabled:opacity-45 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:[filter:url(#rough)] [&_svg:not([class*=size-])]:size-[1.15rem]",
+  "group/button relative inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium select-none outline-none transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150 ease-out active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4",
   {
     variants: {
       variant: {
-        default:
-          "sticker bg-yellow text-ink hover:-rotate-2 active:translate-x-px active:translate-y-0.5 active:shadow-[0_1px_0_rgb(51_48_43/0.75)]",
-        pink: "sticker bg-pink-wash text-ink hover:rotate-2 active:translate-x-px active:translate-y-0.5 active:shadow-[0_1px_0_rgb(51_48_43/0.75)]",
+        default: "bg-gray-900 text-gray-50 shadow-sm hover:bg-white",
         secondary:
-          "sticker bg-blue-wash text-ink hover:rotate-2 active:translate-x-px active:translate-y-0.5 active:shadow-[0_1px_0_rgb(51_48_43/0.75)]",
-        outline:
-          "sticker bg-paper-light text-ink hover:-rotate-1 active:translate-x-px active:translate-y-0.5 active:shadow-[0_1px_0_rgb(51_48_43/0.75)]",
+          "border border-hairline-strong bg-gray-100 text-gray-900 hover:border-gray-500 hover:bg-gray-200",
+        outline: "border border-hairline-strong bg-transparent text-gray-900 hover:bg-gray-100",
         ghost:
-          "rounded-[var(--radius-hand)] text-ink hover:bg-ink/[0.07] hover:-rotate-3 aria-pressed:bg-yellow/60 aria-pressed:-rotate-3",
-        destructive:
-          "sticker bg-error-ink text-paper-light hover:-rotate-1 active:translate-y-0.5 active:shadow-[0_1px_0_rgb(51_48_43/0.75)]",
-        link: "font-title text-ink underline decoration-ink decoration-2 underline-offset-4 hover:decoration-pink",
+          "text-gray-700 hover:bg-gray-200 hover:text-gray-900 aria-pressed:bg-gray-200 aria-pressed:text-gray-900",
+        accent: "bg-blue-strong text-white shadow-sm hover:bg-blue",
+        destructive: "bg-red-soft text-red hover:bg-red/20",
+        link: "h-auto px-0 text-gray-900 underline-offset-4 hover:underline active:scale-100",
       },
       size: {
-        default: "h-10 px-4 text-base",
-        xs: "h-7 gap-1 px-2 text-xs [&_svg:not([class*=size-])]:size-3.5",
-        sm: "h-9 px-3 text-sm",
-        lg: "h-12 px-6 font-title text-xl",
-        icon: "size-10",
+        default: "h-9 px-4 text-sm",
+        xs: "h-7 gap-1.5 px-2.5 text-xs [&_svg:not([class*=size-])]:size-3.5",
+        sm: "h-8 px-3 text-sm",
+        lg: "h-10 px-5 text-sm",
+        icon: "size-9",
         "icon-xs": "size-7 [&_svg:not([class*=size-])]:size-3.5",
-        "icon-sm": "size-9",
-        "icon-lg": "size-12",
+        "icon-sm": "size-8",
+        "icon-lg": "size-10",
       },
     },
     defaultVariants: {

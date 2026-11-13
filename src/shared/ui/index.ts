@@ -11,13 +11,9 @@ export {
 export { Input } from "./input"
 export { Label } from "./label"
 
-// Scrapbook primitives (docs/design/design-system.md)
-export { Butterfly } from "./butterfly"
-export { Desk } from "./desk"
-export { Paper } from "./paper"
-export { ScrapbookFilters } from "./scrapbook-filters"
-export { Star } from "./star"
-export { StickerChoice } from "./sticker-choice"
-export { Tape } from "./tape"
-export { TornLabel } from "./torn-label"
-export { NotebookCover } from "./notebook-cover"
+// Converse primitives (docs/design/design-system.md)
+export { Backdrop } from "./backdrop"
+export { Logo } from "./logo"
+export { Segmented } from "./segmented"
+export { Spinner } from "./spinner"
+export { TypingDots } from "./typing-dots"

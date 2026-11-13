@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { hashString, pick, seeded, tiltFor } from "./seeded"
+import { gradientFor, hashString, pick, seeded } from "./seeded"
 
 describe("seeded", () => {
   it("is deterministic for a seed", () => {
@@ -22,15 +22,17 @@ describe("seeded", () => {
   })
 })
 
-describe("tiltFor", () => {
-  it("stays within the requested range", () => {
-    for (let i = 0; i < 200; i++) {
-      expect(Math.abs(tiltFor(`message-${i}`, 1.5))).toBeLessThanOrEqual(1.5)
-    }
+describe("gradientFor", () => {
+  it("is stable for the same seed", () => {
+    expect(gradientFor("user-42")).toBe(gradientFor("user-42"))
   })
 
-  it("is stable for the same seed", () => {
-    expect(tiltFor("msg-42")).toBe(tiltFor("msg-42"))
+  it("gives different people different gradients", () => {
+    expect(gradientFor("user-1")).not.toBe(gradientFor("user-2"))
+  })
+
+  it("is a CSS gradient of two oklch colors", () => {
+    expect(gradientFor("x")).toMatch(/^linear-gradient\(135deg, oklch\([^)]+\), oklch\([^)]+\)\)$/)
   })
 })
 

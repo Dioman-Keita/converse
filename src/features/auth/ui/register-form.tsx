@@ -12,6 +12,7 @@ import {
   CardTitle,
   Input,
   Label,
+  Spinner,
 } from "@/shared/ui"
 import { useI18n } from "@/shared/i18n"
 
@@ -19,7 +20,7 @@ import { register } from "../api/auth"
 import { FormError } from "./form-error"
 
 /**
- * Register form — same taped scrap as LoginForm.
+ * Register form — same card as LoginForm.
  * Calls `POST /api/auth/register`; the server signs the new user in.
  */
 export function RegisterForm() {
@@ -54,8 +55,8 @@ export function RegisterForm() {
   }
 
   return (
-    <Card tilt={1.2} className="w-full">
-      <CardHeader className="space-y-1">
+    <Card lit className="w-full bg-gray-50/90 backdrop-blur-xl">
+      <CardHeader>
         <CardTitle>{t("register.title")}</CardTitle>
         <CardDescription>
           {t("register.subtitle")}
@@ -63,7 +64,7 @@ export function RegisterForm() {
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-2">
           <div className="grid gap-2">
             <Label htmlFor="register-name">{t("field.name")}</Label>
             <Input
@@ -114,15 +115,16 @@ export function RegisterForm() {
           <FormError message={error} />
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 pt-2">
+        <CardFooter className="flex flex-col gap-4 pt-2">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
+            {pending && <Spinner />}
             {pending ? t("auth.creatingAccount") : t("auth.createAccount")}
           </Button>
-          <p className="m-0 text-center text-base text-ink-soft">
+          <p className="m-0 text-center text-[13px] text-gray-700">
             {t("register.haveAccount")}{" "}
             <Link
               to="/login"
-              className="text-ink underline decoration-2 underline-offset-4 hover:decoration-pink"
+              className="font-medium text-gray-900 underline-offset-4 hover:underline"
             >
               {t("auth.signIn")}
             </Link>

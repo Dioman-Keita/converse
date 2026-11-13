@@ -13,8 +13,6 @@
 Technical details (REST API, WebSocket protocol, design decisions): [ARCHITECTURE.md](ARCHITECTURE.md).
 Visual design (art direction, design system, motion): [docs/design/](docs/design/README.md).
 
-![Converse: a conversation in the correspondence notebook](docs/design/screenshots/chat-awa.webp)
-
 ```
 Browser (iOS, Android, desktop)
         │ HTTPS / WSS

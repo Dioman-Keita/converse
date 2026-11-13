@@ -3,11 +3,23 @@
  * (enforced by its type). `{name}` placeholders are filled by `t(key, params)`.
  */
 export const en = {
-  "home.title": "Chat in realtime",
-  "home.subtitle": "Self-hosted instant messaging: your conversations stay with you.",
+  "home.eyebrow": "Self-hosted · Open source",
+  "home.title": "Messaging for teams that own their data",
+  "home.subtitle": "Realtime conversations, voice notes, photos, videos and documents — running on your own server.",
+  "home.openApp": "Open Converse",
+  "home.featureRealtime": "Realtime",
+  "home.featureRealtimeText": "Messages, typing and presence over a single WebSocket.",
+  "home.featureMedia": "Voice, media, files",
+  "home.featureMediaText": "Record a note, drop a photo, a video or any document.",
+  "home.featurePrivate": "Yours",
+  "home.featurePrivateText": "One Docker host, your Postgres. Nothing leaves your machine.",
+  "home.previewName": "Product team",
+  "home.previewA": "Build is green, shipping the release now.",
+  "home.previewB": "Perfect. I'll post the changelog.",
+  "home.previewC": "Voice note from the review attached 👇",
 
-  "auth.tagline": "Realtime messaging",
-  "auth.coverNote": "Private letters… keep out!",
+  "auth.tagline": "Realtime messaging, self-hosted.",
+  "auth.backHome": "Converse home",
   "auth.signIn": "Sign in",
   "auth.signingIn": "Signing in…",
   "auth.createAccount": "Create account",
@@ -52,6 +64,7 @@ export const en = {
 
   "composer.placeholder": "Write a message…",
   "composer.messageLabel": "Message",
+  "composer.hint": "Enter to send · Shift + Enter for a new line",
   "composer.send": "Send",
   "composer.record": "Record a voice message",
   "composer.cancelRecording": "Cancel recording",
@@ -95,7 +108,10 @@ export const en = {
   "chat.loadingRooms": "Loading conversations…",
   "chat.roomsFailed": "Couldn't load conversations.",
   "chat.noRooms": "No conversations yet. Start one with the email of someone who has an account.",
-  "chat.selectRoom": "Open a conversation to turn the page…",
+  "chat.selectRoom": "Select a conversation",
+  "chat.selectRoomHint": "Pick one on the left, or start a new one.",
+  "chat.search": "Search conversations",
+  "chat.noMatch": "No conversation matches “{query}”.",
   "chat.someone": "Someone",
 
   "status.online": "Online",
@@ -104,7 +120,8 @@ export const en = {
 
   "messages.loading": "Loading messages…",
   "messages.failed": "Couldn't load messages. Check your connection.",
-  "messages.empty": "A blank page… write the first line 👋",
+  "messages.empty": "No messages yet",
+  "messages.emptyHint": "Send the first one — it arrives instantly.",
   "messages.loadOlder": "Load older messages",
   "messages.loadingOlder": "Loading…",
   "messages.formerMember": "Former member",
@@ -147,11 +164,23 @@ export const en = {
 export type MessageKey = keyof typeof en
 
 export const fr: Record<MessageKey, string> = {
-  "home.title": "Discutez en temps réel",
-  "home.subtitle": "Messagerie instantanée auto-hébergée : vos conversations restent chez vous.",
+  "home.eyebrow": "Auto-hébergé · Open source",
+  "home.title": "La messagerie des équipes qui gardent leurs données",
+  "home.subtitle": "Conversations en temps réel, notes vocales, photos, vidéos et documents — sur votre propre serveur.",
+  "home.openApp": "Ouvrir Converse",
+  "home.featureRealtime": "Temps réel",
+  "home.featureRealtimeText": "Messages, saisie et présence sur un seul WebSocket.",
+  "home.featureMedia": "Voix, médias, fichiers",
+  "home.featureMediaText": "Enregistrez une note, envoyez une photo, une vidéo ou un document.",
+  "home.featurePrivate": "Chez vous",
+  "home.featurePrivateText": "Un hôte Docker, votre Postgres. Rien ne quitte votre machine.",
+  "home.previewName": "Équipe produit",
+  "home.previewA": "Le build est vert, je publie la version.",
+  "home.previewB": "Parfait. Je poste le changelog.",
+  "home.previewC": "Note vocale de la revue en pièce jointe 👇",
 
-  "auth.tagline": "Messagerie en temps réel",
-  "auth.coverNote": "Lettres privées… ne pas lire !",
+  "auth.tagline": "Messagerie en temps réel, auto-hébergée.",
+  "auth.backHome": "Accueil Converse",
   "auth.signIn": "Se connecter",
   "auth.signingIn": "Connexion…",
   "auth.createAccount": "Créer un compte",
@@ -196,6 +225,7 @@ export const fr: Record<MessageKey, string> = {
 
   "composer.placeholder": "Écrire un message…",
   "composer.messageLabel": "Message",
+  "composer.hint": "Entrée pour envoyer · Maj + Entrée pour aller à la ligne",
   "composer.send": "Envoyer",
   "composer.record": "Enregistrer un message vocal",
   "composer.cancelRecording": "Annuler l’enregistrement",
@@ -240,7 +270,10 @@ export const fr: Record<MessageKey, string> = {
   "chat.roomsFailed": "Impossible de charger les conversations.",
   "chat.noRooms":
     "Aucune conversation pour l’instant. Démarrez-en une avec l’email d’une personne inscrite.",
-  "chat.selectRoom": "Ouvrez une conversation pour tourner la page…",
+  "chat.selectRoom": "Sélectionnez une conversation",
+  "chat.selectRoomHint": "Choisissez-en une à gauche, ou démarrez-en une nouvelle.",
+  "chat.search": "Rechercher une conversation",
+  "chat.noMatch": "Aucune conversation ne correspond à « {query} ».",
   "chat.someone": "Quelqu’un",
 
   "status.online": "En ligne",
@@ -249,7 +282,8 @@ export const fr: Record<MessageKey, string> = {
 
   "messages.loading": "Chargement des messages…",
   "messages.failed": "Impossible de charger les messages. Vérifiez votre connexion.",
-  "messages.empty": "Page blanche… écrivez la première ligne 👋",
+  "messages.empty": "Aucun message",
+  "messages.emptyHint": "Envoyez le premier — il arrive instantanément.",
   "messages.loadOlder": "Messages plus anciens",
   "messages.loadingOlder": "Chargement…",
   "messages.formerMember": "Ancien membre",

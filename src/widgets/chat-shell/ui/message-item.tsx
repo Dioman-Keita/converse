@@ -1,11 +1,10 @@
-import { Clock } from "lucide-react"
+import { Clock, RotateCw } from "lucide-react"
 import { motion } from "motion/react"
 
 import { FileAttachment, MediaAttachment, VoicePlayer } from "@/entities/message"
 import type { ChatMessage } from "@/entities/message"
 import { useI18n } from "@/shared/i18n"
-import { lift, springs } from "@/shared/lib/motion"
-import { tiltFor } from "@/shared/lib/seeded"
+import { springs, transitions } from "@/shared/lib/motion"
 import { cn } from "@/shared/lib/utils"
 
 import { useFormatters } from "../lib/format"
@@ -15,74 +14,84 @@ type MessageItemProps = {
   mine: boolean
   /** First message of a run by the same author (adds breathing room). */
   newGroup: boolean
+  /** Last message of the run: carries the timestamp and the tail corner. */
+  lastOfGroup: boolean
   onRetry: (message: ChatMessage) => void
   onOpenImage: (src: string, alt: string) => void
 }
 
 /**
- * One message, laid on the page like a note: own notes are washed in pink and
- * lean from the right, the others' in pale blue from the left. Photos and videos
- * are taped polaroids. Each item keeps the same small tilt forever (seeded by its id).
+ * One message. Mine are light and aligned right, the others' a raised dark surface
+ * on the left; a run of messages by the same author shares one tail and one timestamp.
+ * New messages rise from the composer side and settle.
  */
-export function MessageItem({ message, mine, newGroup, onRetry, onOpenImage }: MessageItemProps) {
+export function MessageItem({ message, mine, newGroup, lastOfGroup, onRetry, onOpenImage }: MessageItemProps) {
   const { t } = useI18n()
   const format = useFormatters()
   const isMedia = message.kind === "image" || message.kind === "video"
   const failed = message.status === "failed"
-  const tilt = tiltFor(message.clientId ?? message.id, isMedia ? 2.5 : 0.9)
+  const pending = message.status === "pending"
 
   return (
     <motion.div
       className={cn(
         "flex max-w-[85%] flex-col sm:max-w-[70%]",
-        mine ? "items-end self-end" : "items-start self-start",
-        newGroup && "mt-2",
-        isMedia && "my-2",
+        mine ? "ml-auto items-end" : "items-start",
+        newGroup ? "mt-3" : "mt-0.5",
       )}
       style={{ transformOrigin: mine ? "100% 100%" : "0% 100%" }}
-      initial={{ opacity: 0, y: 16, scale: 0.94, rotate: tilt + (mine ? 5 : -5) }}
-      animate={{ opacity: 1, y: 0, scale: 1, rotate: tilt }}
-      whileHover={isMedia && !message.upload ? lift : undefined}
-      transition={isMedia ? springs.polaroid : springs.note}
+      initial={{ opacity: 0, y: 12, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ ...springs.dialog, opacity: transitions.fast }}
+      title={format.time(message.createdAt)}
     >
       {message.kind === "file" ? (
-        <div className={cn("max-w-full", failed && "note-failed opacity-70")}>
-          <FileAttachment message={message} mine={mine && !failed} />
+        <div className={cn("max-w-full", failed && "opacity-60")}>
+          <FileAttachment message={message} mine={mine} />
         </div>
       ) : isMedia ? (
-        <div className={cn("max-w-full", failed && "note-failed opacity-70")}>
+        <div className={cn("max-w-full", failed && "opacity-60")}>
           <MediaAttachment message={message} onOpenImage={onOpenImage} />
         </div>
       ) : (
         <div
           className={cn(
-            "note px-3.5 py-1.5 text-base break-words whitespace-pre-wrap",
-            mine ? "note-mine" : "note-theirs",
-            message.status === "pending" && "opacity-70",
-            failed && "note-failed",
+            "rounded-[18px] px-3.5 py-2 text-[14.5px] leading-[1.45] break-words whitespace-pre-wrap transition-opacity duration-200",
+            mine ? "bg-bubble-mine text-bubble-mine-fg" : "bg-bubble-theirs text-bubble-theirs-fg",
+            lastOfGroup && (mine ? "rounded-br-md" : "rounded-bl-md"),
+            pending && "opacity-60",
+            failed && "opacity-60 ring-1 ring-red/60",
           )}
         >
           {message.kind === "voice" && message.voice ? (
-            <VoicePlayer src={message.voice.url} durationMs={message.voice.durationMs} mine={mine && !failed} />
+            <VoicePlayer
+              src={message.voice.url}
+              durationMs={message.voice.durationMs}
+              seed={message.id}
+              mine={mine}
+            />
           ) : (
             message.body
           )}
         </div>
       )}
-      <span className="mt-0.5 flex items-center gap-1 px-1.5 text-xs text-ink-soft">
-        {message.status === "pending" && <Clock className="rough size-3.5" aria-label={t("messages.sending")} />}
-        {failed ? (
-          <button
-            type="button"
-            onClick={() => onRetry(message)}
-            className="text-sm text-error-ink underline decoration-dashed underline-offset-4 hover:decoration-solid"
-          >
-            ✗ {t("messages.failedRetry")}
-          </button>
-        ) : (
-          format.time(message.createdAt)
-        )}
-      </span>
+      {(lastOfGroup || pending || failed) && (
+        <span className="mt-1 flex items-center gap-1.5 px-1 font-mono text-[11px] text-gray-600 tabular-nums">
+          {pending && <Clock className="size-3" aria-label={t("messages.sending")} />}
+          {failed ? (
+            <button
+              type="button"
+              onClick={() => onRetry(message)}
+              className="inline-flex items-center gap-1 font-sans text-xs text-red hover:underline"
+            >
+              <RotateCw className="size-3" aria-hidden />
+              {t("messages.failedRetry")}
+            </button>
+          ) : (
+            format.time(message.createdAt)
+          )}
+        </span>
+      )}
     </motion.div>
   )
 }
