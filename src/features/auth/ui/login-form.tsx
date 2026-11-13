@@ -12,6 +12,7 @@ import {
   CardTitle,
   Input,
   Label,
+  Spinner,
 } from "@/shared/ui"
 import { useI18n } from "@/shared/i18n"
 
@@ -19,7 +20,7 @@ import { login } from "../api/auth"
 import { FormError } from "./form-error"
 
 /**
- * Login form — a taped scrap of paper on the notebook cover.
+ * Login form.
  * Calls `POST /api/auth/login`; the server sets the session cookie.
  */
 export function LoginForm() {
@@ -46,8 +47,8 @@ export function LoginForm() {
   }
 
   return (
-    <Card tilt={1.2} className="w-full">
-      <CardHeader className="space-y-1">
+    <Card lit className="w-full bg-gray-50/90 backdrop-blur-xl">
+      <CardHeader>
         <CardTitle>{t("login.title")}</CardTitle>
         <CardDescription>
           {t("login.subtitle")}
@@ -55,7 +56,7 @@ export function LoginForm() {
       </CardHeader>
 
       <form onSubmit={handleSubmit}>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 pt-2">
           <div className="grid gap-2">
             <Label htmlFor="login-email">{t("field.email")}</Label>
             <Input
@@ -82,15 +83,16 @@ export function LoginForm() {
           <FormError message={error} />
         </CardContent>
 
-        <CardFooter className="flex flex-col gap-3 pt-2">
+        <CardFooter className="flex flex-col gap-4 pt-2">
           <Button type="submit" className="w-full" size="lg" disabled={pending}>
+            {pending && <Spinner />}
             {pending ? t("auth.signingIn") : t("auth.signIn")}
           </Button>
-          <p className="m-0 text-center text-base text-ink-soft">
+          <p className="m-0 text-center text-[13px] text-gray-700">
             {t("login.noAccount")}{" "}
             <Link
               to="/register"
-              className="text-ink underline decoration-2 underline-offset-4 hover:decoration-pink"
+              className="font-medium text-gray-900 underline-offset-4 hover:underline"
             >
               {t("login.createOne")}
             </Link>

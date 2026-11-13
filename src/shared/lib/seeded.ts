@@ -1,7 +1,6 @@
 /**
- * Deterministic randomness for decoration: the same seed (a room id, a message id,
- * a date) always gives the same tilt, colors and watercolor stains, so the page
- * looks hand-made yet never reshuffles between renders or visits.
+ * Deterministic randomness for identity: the same seed (a user or room id) always
+ * gives the same avatar gradient, so people stay recognisable between visits.
  */
 
 /** 32-bit FNV-1a hash of a string. */
@@ -25,10 +24,18 @@ export function seeded(seed: string): () => number {
   }
 }
 
-/** A small, stable rotation in degrees within [-max, max]. */
-export function tiltFor(seed: string, max = 1.2): number {
-  const value = seeded(seed)() * 2 - 1
-  return Math.round(value * max * 100) / 100
+// oklch hues that stay clean on black (no muddy yellow-greens around 70–130°).
+const AVATAR_HUES = [15, 35, 160, 185, 210, 240, 265, 290, 320, 345] as const
+
+/**
+ * A stable two-tone gradient for avatars: a hue from AVATAR_HUES drifting
+ * 30–60° further, in the same saturated-but-not-neon band.
+ */
+export function gradientFor(seed: string): string {
+  const next = seeded(seed)
+  const hue = AVATAR_HUES[Math.floor(next() * AVATAR_HUES.length)]
+  const shift = 30 + Math.floor(next() * 30)
+  return `linear-gradient(135deg, oklch(0.74 0.14 ${hue}), oklch(0.56 0.18 ${(hue + shift) % 360}))`
 }
 
 /** Stable pick from a list. */

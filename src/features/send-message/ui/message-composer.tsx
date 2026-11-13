@@ -1,4 +1,4 @@
-import { ImagePlus, Mic, Paperclip, SendHorizontal, Trash2 } from "lucide-react"
+import { ArrowUp, CircleAlert, ImagePlus, Mic, Paperclip, Trash2 } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent, KeyboardEvent } from "react"
@@ -7,7 +7,7 @@ import { formatDuration } from "@/entities/message"
 import { canRecordVoice, useVoiceRecorder } from "@/shared/lib/use-voice-recorder"
 import type { Recording } from "@/shared/lib/use-voice-recorder"
 import { useI18n } from "@/shared/i18n"
-import { springs } from "@/shared/lib/motion"
+import { springs, transitions } from "@/shared/lib/motion"
 import { Button } from "@/shared/ui"
 
 const MAX_LENGTH = 4000
@@ -35,7 +35,7 @@ type MessageComposerProps = {
 /**
  * Enter sends, Shift+Enter adds a new line.
  * With an empty box the send button becomes a microphone: tap to record, then send or discard.
- * Looks like a lined scrap of paper at the foot of the page; the send/mic sticker swaps with a flick.
+ * A floating field at the foot of the thread; the send and mic buttons swap with a quick scale.
  */
 export function MessageComposer({
   onSend,
@@ -114,149 +114,186 @@ export function MessageComposer({
 
   if (state.status === "recording" || state.status === "starting") {
     return (
-      <div className="relative z-10 flex items-center gap-2 px-3 pt-2 pb-3 sm:px-5">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={t("composer.cancelRecording")}
-          onClick={recorder.cancel}
+      <div className="px-3 pb-3 sm:px-6 sm:pb-4">
+        <motion.div
+          className="mx-auto flex max-w-3xl items-center gap-2 rounded-2xl border border-red/30 bg-gray-50 p-1.5 shadow-md"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={transitions.base}
         >
-          <Trash2 />
-        </Button>
-        <div className="note flex min-h-11 flex-1 items-center gap-2.5 px-4 text-base">
-          <span className="size-3 animate-pulse rounded-full border-[1.5px] border-ink bg-error-ink" aria-hidden />
-          {state.status === "starting" ? (
-            <span className="text-ink-soft">{t("composer.micStarting")}</span>
-          ) : (
-            <RecordingTimer startedAt={state.startedAt} />
-          )}
-        </div>
-        <Button
-          type="button"
-          size="icon"
-          variant="pink"
-          aria-label={t("composer.sendVoice")}
-          disabled={state.status !== "recording"}
-          onClick={() => void recorder.stop().then(sendRecording)}
-        >
-          <SendHorizontal />
-        </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="rounded-xl"
+            aria-label={t("composer.cancelRecording")}
+            onClick={recorder.cancel}
+          >
+            <Trash2 />
+          </Button>
+          <div className="flex min-h-9 flex-1 items-center gap-3 px-1 text-sm">
+            <span className="relative flex size-2.5" aria-hidden>
+              <span className="absolute inset-0 animate-ping rounded-full bg-red opacity-60" />
+              <span className="relative size-2.5 rounded-full bg-red" />
+            </span>
+            {state.status === "starting" ? (
+              <span className="text-gray-700">{t("composer.micStarting")}</span>
+            ) : (
+              <>
+                <RecordingTimer startedAt={state.startedAt} />
+                <LiveBars />
+              </>
+            )}
+          </div>
+          <Button
+            type="button"
+            size="icon"
+            className="rounded-xl"
+            aria-label={t("composer.sendVoice")}
+            disabled={state.status !== "recording"}
+            onClick={() => void recorder.stop().then(sendRecording)}
+          >
+            <ArrowUp />
+          </Button>
+        </motion.div>
       </div>
     )
   }
 
   const showMic = voiceSupported && onSendVoice && !value.trim()
+  const error = mediaError ?? (state.status === "error" ? t(state.message) : undefined)
 
   return (
-    <form
-      onSubmit={submit}
-      className="relative z-10 flex flex-col gap-1.5 px-3 pt-2 pb-3 sm:px-5"
-    >
-      {mediaError && (
-        <p role="alert" className="m-0 flex items-center gap-2 px-1 text-sm text-error-ink">
-          {mediaError}
-          <button type="button" className="underline" onClick={() => setMediaError(undefined)}>
-            {t("common.ok")}
-          </button>
-        </p>
-      )}
-      {state.status === "error" && (
-        <p role="alert" className="m-0 flex items-center gap-2 px-1 text-sm text-error-ink">
-          {t(state.message)}
-          <button type="button" className="underline" onClick={recorder.dismissError}>
-            {t("common.ok")}
-          </button>
-        </p>
-      )}
-      <div className="note flex items-end gap-1 py-1.5 pr-1.5 pl-1">
-        {onSendFile && (
-          <>
-            <input
-              ref={documentInput}
-              type="file"
-              multiple
-              hidden
-              onChange={(e) => {
-                pickDocuments(e.target.files)
-                e.target.value = ""
-              }}
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label={t("composer.attachFile")}
-              disabled={disabled}
-              onClick={() => documentInput.current?.click()}
+    <form onSubmit={submit} className="px-3 pb-3 sm:px-6 sm:pb-4">
+      <div className="mx-auto flex max-w-3xl flex-col gap-2">
+        <AnimatePresence initial={false}>
+          {error && (
+            <motion.p
+              key="error"
+              role="alert"
+              className="m-0 flex items-center gap-2 rounded-lg border border-red/25 bg-red-soft px-3 py-2 text-[13px] text-red"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={transitions.fast}
             >
-              <Paperclip />
-            </Button>
-          </>
-        )}
-        {onSendMedia && (
-          <>
-            <input
-              ref={fileInput}
-              type="file"
-              accept="image/*,video/*"
-              multiple
-              hidden
-              onChange={(e) => {
-                pickFiles(e.target.files)
-                e.target.value = ""
-              }}
-            />
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              aria-label={t("composer.attach")}
-              disabled={disabled}
-              onClick={() => fileInput.current?.click()}
-            >
-              <ImagePlus />
-            </Button>
-          </>
-        )}
-        <textarea
-          ref={textarea}
-          value={value}
-          onChange={(e) => handleChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={MAX_LENGTH}
-          rows={1}
-          placeholder={t("composer.placeholder")}
-          aria-label={t("composer.messageLabel")}
-          className="hand-lines field-sizing-content max-h-40 min-h-10 flex-1 resize-none bg-transparent px-2 pt-1.5 pb-0.5 text-base text-ink outline-none placeholder:text-ink-soft/70 focus-visible:outline-none"
-        />
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={showMic ? "mic" : "send"}
-            className="flex"
-            initial={{ scale: 0, rotate: -45 }}
-            animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 45 }}
-            transition={springs.pop}
-          >
-            {showMic ? (
+              <CircleAlert className="size-4 shrink-0" aria-hidden />
+              <span className="flex-1">{error}</span>
+              <button
+                type="button"
+                className="font-medium hover:underline"
+                onClick={() => {
+                  setMediaError(undefined)
+                  if (state.status === "error") recorder.dismissError()
+                }}
+              >
+                {t("common.ok")}
+              </button>
+            </motion.p>
+          )}
+        </AnimatePresence>
+        <div className="flex items-end gap-1 rounded-2xl border border-hairline-strong bg-gray-50 p-1.5 shadow-md transition-[border-color,box-shadow] duration-150 focus-within:border-gray-500">
+          {onSendFile && (
+            <>
+              <input
+                ref={documentInput}
+                type="file"
+                multiple
+                hidden
+                onChange={(e) => {
+                  pickDocuments(e.target.files)
+                  e.target.value = ""
+                }}
+              />
               <Button
                 type="button"
                 size="icon"
-                variant="pink"
-                aria-label={t("composer.record")}
+                variant="ghost"
+                className="rounded-xl"
+                aria-label={t("composer.attachFile")}
+                title={t("composer.attachFile")}
                 disabled={disabled}
-                onClick={() => void recorder.start()}
+                onClick={() => documentInput.current?.click()}
               >
-                <Mic />
+                <Paperclip />
               </Button>
-            ) : (
-              <Button type="submit" size="icon" disabled={disabled || !value.trim()} aria-label={t("composer.send")}>
-                <SendHorizontal />
+            </>
+          )}
+          {onSendMedia && (
+            <>
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/*,video/*"
+                multiple
+                hidden
+                onChange={(e) => {
+                  pickFiles(e.target.files)
+                  e.target.value = ""
+                }}
+              />
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="rounded-xl"
+                aria-label={t("composer.attach")}
+                title={t("composer.attach")}
+                disabled={disabled}
+                onClick={() => fileInput.current?.click()}
+              >
+                <ImagePlus />
               </Button>
-            )}
-          </motion.span>
-        </AnimatePresence>
+            </>
+          )}
+          <textarea
+            ref={textarea}
+            value={value}
+            onChange={(e) => handleChange(e.target.value)}
+            onKeyDown={handleKeyDown}
+            maxLength={MAX_LENGTH}
+            rows={1}
+            placeholder={t("composer.placeholder")}
+            aria-label={t("composer.messageLabel")}
+            className="field-sizing-content max-h-48 min-h-9 flex-1 resize-none bg-transparent px-2 py-2 text-[14.5px] leading-5 text-gray-900 outline-none placeholder:text-gray-600 focus-visible:shadow-none"
+          />
+          <AnimatePresence mode="popLayout" initial={false}>
+            <motion.span
+              key={showMic ? "mic" : "send"}
+              className="flex"
+              initial={{ scale: 0.6, opacity: 0, filter: "blur(2px)" }}
+              animate={{ scale: 1, opacity: 1, filter: "blur(0px)" }}
+              exit={{ scale: 0.6, opacity: 0, filter: "blur(2px)" }}
+              transition={springs.pop}
+            >
+              {showMic ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-xl"
+                  aria-label={t("composer.record")}
+                  title={t("composer.record")}
+                  disabled={disabled}
+                  onClick={() => void recorder.start()}
+                >
+                  <Mic />
+                </Button>
+              ) : (
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="rounded-xl"
+                  disabled={disabled || !value.trim()}
+                  aria-label={t("composer.send")}
+                >
+                  <ArrowUp />
+                </Button>
+              )}
+            </motion.span>
+          </AnimatePresence>
+        </div>
+        <p className="m-0 hidden px-2 font-mono text-[11px] text-gray-600 md:block">{t("composer.hint")}</p>
       </div>
     </form>
   )
@@ -269,9 +306,25 @@ function RecordingTimer({ startedAt }: { startedAt: number }) {
     return () => clearInterval(timer)
   }, [])
   return (
-    <span className="tabular-nums" aria-live="off">
+    <span className="font-mono text-[13px] text-gray-900 tabular-nums" aria-live="off">
       {formatDuration(now - startedAt)}
-      <span className="text-ink-soft"> / {formatDuration(MAX_VOICE_MS)}</span>
+      <span className="text-gray-600"> / {formatDuration(MAX_VOICE_MS)}</span>
+    </span>
+  )
+}
+
+/** Bars dancing while the microphone records (decorative, not the real input level). */
+function LiveBars() {
+  return (
+    <span className="ml-auto flex h-5 items-center gap-[3px] pr-2" aria-hidden>
+      {Array.from({ length: 14 }, (_, i) => (
+        <motion.span
+          key={i}
+          className="w-[3px] rounded-full bg-gray-700"
+          animate={{ height: ["25%", "100%", "40%", "80%", "25%"] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: (i % 7) * 0.09, ease: "easeInOut" }}
+        />
+      ))}
     </span>
   )
 }

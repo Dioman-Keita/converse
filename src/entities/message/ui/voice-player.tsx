@@ -1,11 +1,14 @@
 import { Pause, Play } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { useI18n } from "@/shared/i18n"
+import { seeded } from "@/shared/lib/seeded"
 import { cn } from "@/shared/lib/utils"
 
 // Only one voice note plays at a time across the page.
 let playing: HTMLAudioElement | null = null
+
+const BARS = 36
 
 export function formatDuration(ms: number): string {
   const total = Math.max(0, Math.round(ms / 1000))
@@ -15,15 +18,28 @@ export function formatDuration(ms: number): string {
 type VoicePlayerProps = {
   src: string
   durationMs: number
-  /** Own notes play with a pink sticker, the others' with a blue one. */
+  /** Seeds the waveform's shape so each note keeps its own. */
+  seed: string
+  /** Inside a light (own) bubble: dark controls. */
   mine?: boolean
 }
 
-export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
+/** Round play button and a waveform that fills as the note plays; click or arrow keys to seek. */
+export function VoicePlayer({ src, durationMs, seed, mine }: VoicePlayerProps) {
   const { t } = useI18n()
   const audio = useRef<HTMLAudioElement>(null)
   const [isPlaying, setPlaying] = useState(false)
   const [position, setPosition] = useState(0)
+
+  // A decorative waveform: smooth random heights, stable per message.
+  const bars = useMemo(() => {
+    const next = seeded(seed)
+    let previous = 0.5
+    return Array.from({ length: BARS }, () => {
+      previous = Math.min(1, Math.max(0.15, previous * 0.5 + next() * 0.6))
+      return previous
+    })
+  }, [seed])
 
   useEffect(() => {
     const el = audio.current
@@ -57,7 +73,7 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
   const progress = durationMs > 0 ? Math.min(1, position / durationMs) : 0
 
   return (
-    <div className="flex w-56 max-w-full items-center gap-3 py-1">
+    <div className="flex w-64 max-w-full items-center gap-3 py-0.5">
       <audio
         ref={audio}
         src={src}
@@ -75,35 +91,23 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
         onClick={toggle}
         aria-label={isPlaying ? t("voice.pause") : t("voice.play")}
         className={cn(
-          "sticker relative flex size-9 shrink-0 items-center justify-center rounded-full text-ink",
-          "transition-[rotate,scale] duration-150 hover:-rotate-12 active:scale-90 motion-reduce:transition-none",
-          mine ? "bg-pink-wash" : "bg-blue-wash",
+          "relative flex size-9 shrink-0 items-center justify-center rounded-full transition-transform duration-150 active:scale-90",
+          mine ? "bg-gray-50 text-gray-900" : "bg-gray-900 text-gray-50",
         )}
       >
-        {/* Soft pulse around the button while the note plays. */}
-        {isPlaying && (
-          <span
-            aria-hidden
-            className={cn(
-              "absolute inset-0 animate-ping rounded-full opacity-40 motion-reduce:hidden",
-              mine ? "bg-pink" : "bg-blue",
-            )}
-            style={{ animationDuration: "1.6s" }}
-          />
-        )}
-        {/* Both icons stay mounted and cross-fade with a quarter turn when the state flips. */}
+        {/* Both icons stay mounted and cross-fade when the state flips. */}
         <Play
           aria-hidden
           className={cn(
-            "absolute size-4 translate-x-px transition-all duration-200 ease-out motion-reduce:transition-none",
-            isPlaying ? "scale-50 -rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100",
+            "absolute size-4 translate-x-px fill-current transition-all duration-200 ease-out",
+            isPlaying ? "scale-50 opacity-0" : "scale-100 opacity-100",
           )}
         />
         <Pause
           aria-hidden
           className={cn(
-            "absolute size-4 transition-all duration-200 ease-out motion-reduce:transition-none",
-            isPlaying ? "scale-100 rotate-0 opacity-100" : "scale-50 rotate-90 opacity-0",
+            "absolute size-4 fill-current transition-all duration-200 ease-out",
+            isPlaying ? "scale-100 opacity-100" : "scale-50 opacity-0",
           )}
         />
       </button>
@@ -124,14 +128,29 @@ export function VoicePlayer({ src, durationMs, mine }: VoicePlayerProps) {
             if (e.key === "ArrowRight") seek(Math.min(1, progress + step))
             if (e.key === "ArrowLeft") seek(Math.max(0, progress - step))
           }}
-          className="relative h-2 cursor-pointer rounded-full bg-ink/15"
+          className="flex h-7 cursor-pointer items-center gap-[2px] rounded-sm"
         >
-          <div
-            className={cn("absolute inset-y-0 left-0 rounded-full", mine ? "bg-pink-ink" : "bg-ink/70")}
-            style={{ width: `${progress * 100}%` }}
-          />
+          {bars.map((height, i) => {
+            const played = (i + 0.5) / BARS <= progress
+            return (
+              <span
+                key={i}
+                className={cn(
+                  "w-[3px] flex-1 rounded-full transition-colors duration-150",
+                  played
+                    ? mine
+                      ? "bg-gray-50"
+                      : "bg-gray-900"
+                    : mine
+                      ? "bg-gray-50/25"
+                      : "bg-gray-900/25",
+                )}
+                style={{ height: `${Math.round(height * 100)}%` }}
+              />
+            )
+          })}
         </div>
-        <span className="text-xs text-ink-soft tabular-nums">
+        <span className={cn("font-mono text-[11px] tabular-nums", mine ? "text-gray-50/60" : "text-gray-700")}>
           {formatDuration(isPlaying || position > 0 ? position : durationMs)}
         </span>
       </div>

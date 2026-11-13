@@ -1,13 +1,12 @@
-import { motion } from "motion/react"
+import { AnimatePresence, motion } from "motion/react"
 
 import { initials } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
 import { springs } from "@/shared/lib/motion"
-import { pick } from "@/shared/lib/seeded"
+import { gradientFor } from "@/shared/lib/seeded"
 import { cn } from "@/shared/lib/utils"
-import { WATERCOLORS } from "@/shared/lib/watercolor"
 
-/** A watercolor dab circled in ink, with the initials written by hand. */
+/** A stable gradient disc (seeded by the user or room id) with the initials on top. */
 export function Avatar({
   name,
   seed,
@@ -17,7 +16,7 @@ export function Avatar({
   name: string
   seed: string
   className?: string
-  /** Shows a green sticker when true; nothing when false/undefined. */
+  /** Shows a green dot when true; nothing when false/undefined. */
   online?: boolean
 }) {
   const { t } = useI18n()
@@ -25,31 +24,27 @@ export function Avatar({
     <span className="relative shrink-0">
       <span
         aria-hidden
-        className={cn("relative flex size-10 items-center justify-center font-title text-base text-ink", className)}
+        className={cn(
+          "flex size-9 items-center justify-center rounded-full text-[11px] font-semibold tracking-wide text-white/95 shadow-[inset_0_0_0_1px_rgb(255_255_255/0.12)] [text-shadow:0_1px_2px_rgb(0_0_0/0.35)]",
+          className,
+        )}
+        style={{ background: gradientFor(seed) }}
       >
-        <svg viewBox="0 0 40 40" className="absolute inset-0 size-full overflow-visible">
-          <circle
-            cx="20"
-            cy="20"
-            r="17.5"
-            fill={pick(seed, WATERCOLORS)}
-            fillOpacity="0.7"
-            stroke="var(--ink)"
-            strokeWidth="2"
-            filter="url(#rough)"
-          />
-        </svg>
-        <span className="relative leading-none">{initials(name)}</span>
+        {initials(name)}
       </span>
-      {online && (
-        <motion.span
-          aria-label={t("presence.online")}
-          className="absolute -right-0.5 -bottom-0.5 size-3.5 rounded-full border-2 border-ink bg-green"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={springs.pop}
-        />
-      )}
+      <AnimatePresence>
+        {online && (
+          <motion.span
+            key="online"
+            aria-label={t("presence.online")}
+            className="absolute right-0 bottom-0 size-2.5 rounded-full bg-green ring-2 ring-gray-50"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            transition={springs.pop}
+          />
+        )}
+      </AnimatePresence>
     </span>
   )
 }

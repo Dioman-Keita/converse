@@ -15,7 +15,6 @@ import type { LucideIcon } from "lucide-react"
 import { useI18n } from "@/shared/i18n"
 import { formatBytes } from "@/shared/lib/format-bytes"
 import { cn } from "@/shared/lib/utils"
-import { Tape } from "@/shared/ui"
 
 import type { ChatMessage } from "../model/types"
 
@@ -34,13 +33,17 @@ export function fileIcon(name: string, mime: string): LucideIcon {
   return File
 }
 
+function extension(name: string): string {
+  return name.includes(".") ? name.split(".").pop()!.toUpperCase().slice(0, 5) : ""
+}
+
 type FileAttachmentProps = {
   message: ChatMessage
-  /** Own documents are washed in pink, the others' in pale blue. */
+  /** Own documents sit on the light surface, the others' on the dark one. */
   mine: boolean
 }
 
-/** Document as an index card taped on the page: icon, name, size and a download link (or upload progress). */
+/** Document card: type icon, name, extension and size, and a download action (or upload progress). */
 export function FileAttachment({ message, mine }: FileAttachmentProps) {
   const { t, intlLocale } = useI18n()
   const file = message.file
@@ -49,23 +52,31 @@ export function FileAttachment({ message, mine }: FileAttachmentProps) {
   const progress = message.upload?.progress
   const percent = progress === undefined ? undefined : Math.round(progress * 100)
   const size = formatBytes(file.size, intlLocale, t)
+  const ext = extension(file.name)
 
   const content = (
     <>
-      <Tape placement="top-right" angle={28} className="h-4 w-12" />
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-hand)] border-2 border-ink/80 bg-paper-light">
-        <Icon className="rough size-5" aria-hidden />
+      <span
+        className={cn(
+          "flex size-10 shrink-0 items-center justify-center rounded-lg",
+          mine ? "bg-gray-50/[0.08] text-gray-50" : "border border-hairline-strong bg-gray-100 text-gray-900",
+        )}
+      >
+        <Icon className="size-[18px]" aria-hidden />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-title text-lg leading-tight" title={file.name}>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate text-sm font-medium" title={file.name}>
           {file.name}
         </span>
         {percent === undefined ? (
-          <span className="text-xs text-ink-soft">{size}</span>
+          <span className={cn("font-mono text-[11px]", mine ? "text-gray-50/60" : "text-gray-700")}>
+            {ext && `${ext} · `}
+            {size}
+          </span>
         ) : (
           <span className="mt-1 flex items-center gap-2">
             <span
-              className="h-1.5 flex-1 overflow-hidden rounded-full bg-ink/15"
+              className={cn("h-1 flex-1 overflow-hidden rounded-full", mine ? "bg-gray-50/15" : "bg-gray-900/15")}
               role="progressbar"
               aria-valuemin={0}
               aria-valuemax={100}
@@ -73,32 +84,36 @@ export function FileAttachment({ message, mine }: FileAttachmentProps) {
               aria-label={t("file.uploading", { percent })}
             >
               <span
-                className={cn("block h-full rounded-full transition-[width] duration-200", mine ? "bg-pink" : "bg-blue")}
+                className="block h-full rounded-full bg-blue transition-[width] duration-200"
                 style={{ width: `${percent}%` }}
               />
             </span>
-            <span className="text-xs tabular-nums">{percent}%</span>
+            <span className="font-mono text-[11px] tabular-nums">{percent}%</span>
           </span>
         )}
       </span>
-      {percent === undefined && <Download className="rough size-4 shrink-0 opacity-70" aria-hidden />}
+      {percent === undefined && (
+        <span
+          className={cn(
+            "flex size-8 shrink-0 items-center justify-center rounded-md transition-colors",
+            mine ? "group-hover:bg-gray-50/10" : "group-hover:bg-gray-300",
+          )}
+        >
+          <Download className="size-4 opacity-70 transition-transform duration-200 group-hover:translate-y-px" aria-hidden />
+        </span>
+      )}
     </>
   )
 
   const className = cn(
-    "note flex w-64 max-w-full items-center gap-3 px-3 py-2.5 text-left",
-    mine ? "note-mine" : "note-theirs",
+    "group flex w-72 max-w-full items-center gap-3 rounded-2xl p-2.5 pr-3 text-left",
+    mine ? "bg-bubble-mine text-bubble-mine-fg" : "bg-bubble-theirs text-bubble-theirs-fg",
   )
 
   // Still uploading (or failed before reaching the server): nothing to download yet.
   if (percent !== undefined || !file.url) return <div className={className}>{content}</div>
   return (
-    <a
-      href={file.url}
-      download={file.name}
-      className={cn(className, "transition-[rotate,translate] duration-200 hover:-translate-y-0.5 hover:-rotate-1")}
-      aria-label={t("file.download", { name: file.name })}
-    >
+    <a href={file.url} download={file.name} className={className} aria-label={t("file.download", { name: file.name })}>
       {content}
     </a>
   )

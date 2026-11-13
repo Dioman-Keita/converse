@@ -1,9 +1,12 @@
+import { CircleAlert } from "lucide-react"
+import { AnimatePresence, motion } from "motion/react"
 import { useState } from "react"
 import type { FormEvent } from "react"
 
 import type { Room } from "@/entities/room"
 import { useI18n } from "@/shared/i18n"
-import { Button, Card, Input, Label, StickerChoice } from "@/shared/ui"
+import { transitions } from "@/shared/lib/motion"
+import { Button, Input, Label, Segmented, Spinner } from "@/shared/ui"
 
 import { createRoom } from "../api/create-room"
 
@@ -12,7 +15,7 @@ type CreateRoomFormProps = {
   onCancel: () => void
 }
 
-/** Start a direct conversation by email, or a group with several emails — a scrap taped in the index. */
+/** Start a direct conversation by email, or a group with several emails. */
 export function CreateRoomForm({ onCreated, onCancel }: CreateRoomFormProps) {
   const { t } = useI18n()
   const [type, setType] = useState<"direct" | "group">("direct")
@@ -43,57 +46,70 @@ export function CreateRoomForm({ onCreated, onCancel }: CreateRoomFormProps) {
   }
 
   return (
-    <Card tilt={-1} size="sm">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-3 px-(--card-spacing)">
-        <StickerChoice
-          name="room-type"
-          label={t("chat.newConversation")}
-          options={[
-            { value: "direct", label: t("room.direct") },
-            { value: "group", label: t("room.group") },
-          ]}
-          value={type}
-          onChange={setType}
-        />
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-3 rounded-xl border border-hairline-strong bg-gray-100 p-3 shadow-md"
+    >
+      <p className="m-0 text-[13px] font-semibold text-gray-900">{t("chat.newConversation")}</p>
+      <Segmented
+        name="room-type"
+        label={t("chat.newConversation")}
+        options={[
+          { value: "direct", label: t("room.direct") },
+          { value: "group", label: t("room.group") },
+        ]}
+        value={type}
+        onChange={setType}
+      />
 
+      <AnimatePresence initial={false}>
         {type === "group" && (
-          <div className="grid gap-1">
-            <Label htmlFor="room-name">{t("room.groupName")}</Label>
-            <Input id="room-name" name="name" placeholder={t("room.groupNamePlaceholder")} required />
-          </div>
+          <motion.div
+            key="group-name"
+            className="overflow-hidden"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={transitions.base}
+          >
+            <div className="grid gap-1.5 pb-0.5">
+              <Label htmlFor="room-name">{t("room.groupName")}</Label>
+              <Input id="room-name" name="name" className="h-9" placeholder={t("room.groupNamePlaceholder")} required />
+            </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        <div className="grid gap-1">
-          <Label htmlFor="room-emails">
-            {type === "direct" ? t("room.theirEmail") : t("room.membersEmails")}
-          </Label>
-          <Input
-            id="room-emails"
-            name="emails"
-            type={type === "direct" ? "email" : "text"}
-            placeholder={
-              type === "direct" ? t("room.directEmailPlaceholder") : t("room.groupEmailsPlaceholder")
-            }
-            autoComplete="off"
-            required={type === "direct"}
-          />
-        </div>
+      <div className="grid gap-1.5">
+        <Label htmlFor="room-emails">{type === "direct" ? t("room.theirEmail") : t("room.membersEmails")}</Label>
+        <Input
+          id="room-emails"
+          name="emails"
+          className="h-9"
+          type={type === "direct" ? "email" : "text"}
+          placeholder={type === "direct" ? t("room.directEmailPlaceholder") : t("room.groupEmailsPlaceholder")}
+          autoComplete="off"
+          autoFocus
+          required={type === "direct"}
+        />
+      </div>
 
-        {error && (
-          <p role="alert" className="m-0 text-base text-error-ink">
-            ✗ {error}
-          </p>
-        )}
+      {error && (
+        <p role="alert" className="m-0 flex items-start gap-2 text-[13px] text-red">
+          <CircleAlert className="mt-px size-4 shrink-0" aria-hidden />
+          {error}
+        </p>
+      )}
 
-        <div className="flex gap-2 pt-1">
-          <Button type="submit" size="sm" className="flex-1" disabled={pending}>
-            {pending ? t("room.starting") : `${t("room.start")} →`}
-          </Button>
-          <Button type="button" size="sm" variant="link" onClick={onCancel}>
-            {t("common.cancel")}
-          </Button>
-        </div>
-      </form>
-    </Card>
+      <div className="flex justify-end gap-2 pt-1">
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+          {t("common.cancel")}
+        </Button>
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending && <Spinner className="size-3.5" />}
+          {pending ? t("room.starting") : t("room.start")}
+        </Button>
+      </div>
+    </form>
   )
 }
