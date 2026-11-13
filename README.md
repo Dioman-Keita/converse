@@ -4,7 +4,8 @@
 
 - Accounts (email + password), direct and group conversations, realtime text, **voice**, **photo**, **video** and **document** messages, history.
 - Online status, "last seen…" and "is typing…".
-- Web interface that works on phones and desktops, in **English** (default) or **French**.
+- Dark, professional web interface (Geist type, subtle motion) that works on phones and desktops, in **English** (default) or **French**.
+- Conversation search (`Ctrl/⌘ K`), grouped messages, unread badges.
 - Profile settings: display name and interface language, saved on your account.
 - One command to run everything: `docker compose up -d`.
 - All data stays with you (Postgres) with automatic daily backups.
@@ -175,20 +176,21 @@ docker run --rm -v "$PWD/mobile:/project" -v converse-android-sdk:/sdk -v conver
 ## Using the app
 
 1. Open the address (local or public) and click **Create account**.
-2. Once signed in, click the **New conversation** icon (top left):
+2. Once signed in, click the **New conversation** icon (pencil, top of the sidebar):
    - **Direct**: the email of someone who already has an account;
    - **Group**: a group name + members' emails, separated by commas.
-3. Messages arrive in realtime. `Enter` sends, `Shift + Enter` adds a new line.
-4. **Voice message**: with the text box empty, tap the **microphone** 🎤, speak, then **Send** (or the trash icon to discard). 5 minutes max; the browser asks for microphone access the first time.
+3. Messages arrive in realtime. `Enter` sends, `Shift + Enter` adds a new line. Messages sent by the same person within a few minutes are grouped under one timestamp.
+4. **Voice message**: with the text box empty, tap the **microphone** 🎤, speak, then the **arrow** to send it (or the trash icon to discard). 5 minutes max; the browser asks for microphone access the first time.
    **Photos and videos**: tap the **photo** icon left of the text box and pick one or more files (gallery or camera on phones). Photos are straightened, resized (2048 px max) and stripped of their metadata, including GPS position; tap a photo to view it full screen. Videos are converted so every phone and browser can play them: the message shows "Processing video…" for a few seconds (longer for long videos), then the player appears. Limits: photos 25 MB, videos 95 MB and 5 minutes.
    **Documents** (PDF, Word, Excel, ZIP… any file): tap the **paperclip** and pick one or more files. They're sent exactly as they are (95 MB max) and the other person taps the card to download them. To send a photo in original quality, send it as a document.
-5. A badge shows unread messages; the dot under your name shows the connection state. In a conversation, the header shows whether the other person is online or when they were last seen, and when they're typing.
-6. **Settings** (gear icon, or tap your name, top left): change your display name and the interface language (**English** / **Français**). The language is saved on your account, so it follows you on every device; before signing in, the sign-in pages use the last language chosen on that device.
+5. A blue badge shows unread messages; the dot under your name (bottom of the sidebar) shows the connection state: green online, amber connecting, red offline. In a conversation, the header shows whether the other person is online or when they were last seen, and when they're typing.
+6. **Search**: type in the box at the top of the sidebar, or press `Ctrl + K` (`⌘ K` on Mac) from anywhere, to filter conversations by name or email.
+7. **Settings** (gear icon at the top of the sidebar, or tap your name at the bottom): change your display name and the interface language (**English** / **Français**). The language is saved on your account, so it follows you on every device; before signing in, the sign-in pages use the last language chosen on that device.
 
 Good to know:
 - people must **sign up first** before you can start a conversation with them;
 - opening a direct conversation that already exists reopens it instead of creating a second one;
-- a message that failed to send turns red: tap it to resend (voice notes included, as long as the page hasn't been reloaded);
+- a message that failed to send gets a red outline and a **Not sent — tap to retry** link: tap it to resend (voice notes included, as long as the page hasn't been reloaded);
 - the microphone only works over **HTTPS** (tunnel address) or on `localhost`, not through a local `http://192.168…` address.
 
 ---
@@ -386,6 +388,5 @@ The session expired (30 days) or you signed out elsewhere: sign in again.
 
 [MIT](LICENSE) © 2026 Dioman Keïta
 
-The interface's hand-made journal style is an unofficial, fan-inspired nod to narrative games such as
-*Life is Strange* (Dontnod / Square Enix). No asset from any game is used: everything is recreated in
-CSS/SVG, and the fonts (Patrick Hand, Gochi Hand) are under the SIL Open Font License.
+The interface uses the Geist and Geist Mono fonts (Vercel), under the SIL Open Font License,
+bundled through Fontsource. Icons are from Lucide (ISC License).
