@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config"
 
 /**
  * Integration tests against the built server (`.output/`) and a real Postgres.
- * Run with `npm run test:e2e` after `npm run build` — see README "Développement".
+ * Run with `npm run test:e2e` after `npm run build` — see CONTRIBUTING.md "Tests".
  */
 export default defineConfig({
   root: fileURLToPath(new URL("../..", import.meta.url)),
