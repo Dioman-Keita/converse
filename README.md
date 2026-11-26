@@ -17,8 +17,32 @@
 ---
 
 Converse is a small, complete messaging app you run yourself with one Docker Compose command.
-Your conversations, photos and voice notes stay in your own Postgres database, and a Cloudflare
-Tunnel makes the app reachable over HTTPS from anywhere, **without opening a port on your router**.
+Everything stays on your machine: accounts and messages in your own Postgres database, and uploaded
+photos, voice notes, videos and documents in a separate Docker volume (both are backed up daily). A
+Cloudflare Tunnel makes the app reachable over HTTPS from anywhere, **without opening a port on your router**.
+
+![Converse: a group conversation with a photo, a document and a voice note](docs/screenshots/chat-group.webp)
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/home.webp" alt="Landing page"></td>
+    <td width="50%"><img src="docs/screenshots/chat-direct.webp" alt="Direct conversation with presence and typing indicator"></td>
+  </tr>
+  <tr>
+    <td align="center">Landing page</td>
+    <td align="center">Direct conversation, presence and typing</td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="docs/screenshots/mobile-list.webp" alt="Conversation list on a phone" width="260">
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-chat.webp" alt="Group conversation on a phone" width="260">
+</p>
+
+<sub>Screenshots use fictional demo accounts and content.</sub>
 
 ## Features
 
